@@ -142,47 +142,39 @@ fun AppNavHost(
             route = HistoryRoutes.HISTORY,
             arguments = listOf(
                 navArgument("workoutId") { type = NavType.LongType },
-                navArgument("exerciseId") { type = NavType.LongType }
+                // P0: exerciseId é OPCIONAL. LongType não admite nullable
+                // (crash em build), então trafega como String: ausente = tela
+                // de seleção; inválido/não-numérico/≤0 = inválido com volta;
+                // >0 = aquele exercício. Os três estados vêm do VALOR lido
+                // (getString devolve null ausente), nunca de containsKey.
+                navArgument("exerciseId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
             )
         ) { entry ->
             val args = entry.arguments
             val workoutArg = args?.getLong("workoutId", -1L) ?: -1L
-            if (args != null && args.containsKey("exerciseId")) {
-                val rawExercise = args.getLong("exerciseId", -1L)
-                WorkoutHistoryDestination(
-                    workoutId = workoutArg,
-                    exerciseId = rawExercise.takeIf { it > 0 },
-                    exerciseInvalid = rawExercise <= 0,
-                    workoutRepository = workoutRepository,
-                    historyRepository = historyRepository,
-                    onBack = { navController.popBackStack() },
-                    onNavigateExercise = { targetWorkoutId, targetExerciseId ->
-                        // Replace the current history entry instead of stacking one
-                        // ViewModel per visited exercise.
-                        navController.navigate(HistoryRoutes.forExercise(targetWorkoutId, targetExerciseId)) {
-                            popUpTo(HistoryRoutes.HISTORY) { inclusive = true }
-                            launchSingleTop = true
-                        }
+            val rawExercise = args?.getString("exerciseId")
+            val parsedExercise = rawExercise?.toLongOrNull()
+            val invalid = rawExercise != null && (parsedExercise == null || parsedExercise <= 0)
+            WorkoutHistoryDestination(
+                workoutId = workoutArg,
+                exerciseId = parsedExercise?.takeIf { it > 0 },
+                exerciseInvalid = invalid,
+                workoutRepository = workoutRepository,
+                historyRepository = historyRepository,
+                onBack = { navController.popBackStack() },
+                onNavigateExercise = { targetWorkoutId, targetExerciseId ->
+                    // Replace the current history entry instead of stacking one
+                    // ViewModel per visited exercise.
+                    navController.navigate(HistoryRoutes.forExercise(targetWorkoutId, targetExerciseId)) {
+                        popUpTo(HistoryRoutes.HISTORY) { inclusive = true }
+                        launchSingleTop = true
                     }
-                )
-            } else {
-                WorkoutHistoryDestination(
-                    workoutId = workoutArg,
-                    exerciseId = null,
-                    exerciseInvalid = false,
-                    workoutRepository = workoutRepository,
-                    historyRepository = historyRepository,
-                    onBack = { navController.popBackStack() },
-                    onNavigateExercise = { targetWorkoutId, targetExerciseId ->
-                        // Replace the current history entry instead of stacking one
-                        // ViewModel per visited exercise.
-                        navController.navigate(HistoryRoutes.forExercise(targetWorkoutId, targetExerciseId)) {
-                            popUpTo(HistoryRoutes.HISTORY) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                )
-            }
+                }
+            )
         }
         composable(Routes.BACKUP) {
             BackupRoute(
