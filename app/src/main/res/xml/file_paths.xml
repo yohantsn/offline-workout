@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T8.1: share surface limited to staged backup files. Never external-path. -->
+<paths>
+    <cache-path name="backups" path="backups/" />
+</paths>
