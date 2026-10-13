@@ -1,0 +1,95 @@
+package com.offlineworkout.ui.workouts
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import com.offlineworkout.R
+import com.offlineworkout.ui.components.CodeChip
+
+// Card da lista: o card INTEIRO executa (contentDescription "Executar {name}").
+// Editar/Histórico são clicáveis filhos e param a propagação do clique.
+// totalRestSeconds faz parte do contrato do plano §2, mas o dado ainda não
+// existe no repositório (lote 3 não muda repositório): recebido e ainda não
+// exibido — a linha de minutos de descanso é pendência para o lote 5+ decidir.
+@Composable
+fun WorkoutCard(
+    name: String,
+    exerciseCount: Int,
+    totalRestSeconds: Int,
+    code: String? = null,
+    onCardClick: () -> Unit,
+    onEditClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val executeDescription = stringResource(R.string.list_execute_cd, name)
+    val editDescription = stringResource(R.string.list_edit_cd, name)
+    val historyDescription = stringResource(R.string.list_history_cd, name)
+    Card(
+        onClick = onCardClick,
+        modifier = modifier.semantics {
+            contentDescription = executeDescription
+        }
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { heading() }
+                )
+                if (code != null) {
+                    CodeChip(code = code)
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 12.dp)
+            ) {
+                TextButton(
+                    onClick = onEditClick,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.list_edit),
+                        modifier = Modifier.semantics {
+                            contentDescription = editDescription
+                        }
+                    )
+                }
+                TextButton(
+                    onClick = onHistoryClick,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.list_history),
+                        modifier = Modifier.semantics {
+                            contentDescription = historyDescription
+                        }
+                    )
+                }
+            }
+        }
+    }
+}

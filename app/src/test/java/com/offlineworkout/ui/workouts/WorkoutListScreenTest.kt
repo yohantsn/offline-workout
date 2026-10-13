@@ -1,9 +1,11 @@
 package com.offlineworkout.ui.workouts
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -20,7 +22,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-// T3.1: WorkoutListScreen states, textual actions, semantics and callbacks. No Room.
+// T3.1 + redesign lote 3: card inteiro executa (cd no card), skeleton,
+// ErrorCard, empty com CTA. Cobertura de comportamento, não de nó.
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], qualifiers = "xhdpi")
 class WorkoutListScreenTest {
@@ -56,11 +59,15 @@ class WorkoutListScreenTest {
         idleScreen(WorkoutListUiState.Empty, backed = backed)
         val button = composeTestRule.onNode(hasText("Backup") and hasClickAction())
         button.assertExists().assertIsDisplayed()
-        // T9.2 (R-13): the contract is 48dp, not 48px. The class is pinned to
-        // xhdpi, so 1dp = 2px, and the assertion converts instead of comparing
-        // raw pixels against a dp number.
+        // T9.2 (R-13): o contrato é 48dp, não 48px. Largura E altura (R-19).
         val density = composeTestRule.density
-        val heightDp = with(density) { button.fetchSemanticsNode().size.height.toDp() }
+        val size = button.fetchSemanticsNode().size
+        val widthDp = with(density) { size.width.toDp() }
+        val heightDp = with(density) { size.height.toDp() }
+        assertTrue(
+            "backup button width was $widthDp dp (density $density)",
+            widthDp >= 48.dp
+        )
         assertTrue(
             "backup button height was $heightDp dp (density $density)",
             heightDp >= 48.dp
@@ -81,17 +88,21 @@ class WorkoutListScreenTest {
     }
 
     @Test
-    fun loading_announces_progress() {
+    fun loading_announces_progress_with_skeleton() {
         idleScreen(WorkoutListUiState.Loading)
         composeTestRule.onNodeWithContentDescription("Carregando treinos").assertExists()
-        composeTestRule.onNodeWithText("Carregando treinos…").assertExists()
+        // Skeleton no lugar do spinner: nenhum conteúdo, nenhum CTA, nenhum erro.
+        composeTestRule.onAllNodesWithText("Criar treino").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Tentar novamente").assertCountEquals(0)
     }
 
     @Test
     fun empty_shows_message_and_create_action() {
         val created = IntArray(1)
         idleScreen(WorkoutListUiState.Empty, created = created)
-        composeTestRule.onNodeWithText("Nenhum treino disponível.").assertExists()
+        composeTestRule.onNodeWithText("Nenhum treino ainda").assertExists()
+        composeTestRule.onNodeWithText("Crie seu primeiro treino para começar a registrar séries.")
+            .assertExists()
         composeTestRule.onNodeWithText("Criar treino").performClick()
         composeTestRule.runOnIdle { assertEquals(1, created[0]) }
     }
@@ -126,13 +137,12 @@ class WorkoutListScreenTest {
         )
         composeTestRule.onNodeWithText("Alpha").assertExists()
         composeTestRule.onNodeWithText("Beta").assertExists()
-        composeTestRule.onNodeWithText("Treino A").assertExists()
+        composeTestRule.onNodeWithText("A").assertExists()
         composeTestRule.onNodeWithContentDescription("Executar Alpha").assertExists()
         composeTestRule.onNodeWithContentDescription("Editar Alpha").assertExists()
         composeTestRule.onNodeWithContentDescription("Ver histórico de Alpha").assertExists()
 
-        // The list is scrollable and the header actions push the last card
-        // below the fold, so bring each action into view before tapping it.
+        // O card inteiro executa: o clique no cd dispara onExecutionSelected.
         composeTestRule.onNodeWithContentDescription("Executar Beta").performScrollTo().performClick()
         composeTestRule.onNodeWithContentDescription("Editar Alpha").performScrollTo().performClick()
         composeTestRule.onNodeWithContentDescription("Ver histórico de Beta").performScrollTo().performClick()
@@ -141,5 +151,37 @@ class WorkoutListScreenTest {
             assertEquals(listOf(1L), edited)
             assertEquals(listOf(2L), historied)
         }
+    }
+
+    @Test
+    fun secondary_action_does_not_trigger_execution() {
+        val executed = mutableListOf<Long>()
+        val edited = mutableListOf<Long>()
+        idleScreen(
+            WorkoutListUiState.Success(listOf(WorkoutSummary(1L, "A", "Alpha", 1L))),
+            executed = executed,
+            edited = edited
+        )
+        // A ação filha para a propagação: editar não executa.
+        composeTestRule.onNodeWithContentDescription("Editar Alpha").performClick()
+        composeTestRule.runOnIdle {
+            assertEquals(listOf(1L), edited)
+            assertTrue("card click must not fire on secondary action", executed.isEmpty())
+        }
+    }
+
+    @Test
+    fun card_meets_minimum_touch_size() {
+        idleScreen(
+            WorkoutListUiState.Success(listOf(WorkoutSummary(1L, "A", "Alpha", 1L)))
+        )
+        val card = composeTestRule.onNodeWithContentDescription("Executar Alpha")
+        card.assertExists()
+        val density = composeTestRule.density
+        val size = card.fetchSemanticsNode().size
+        val widthDp = with(density) { size.width.toDp() }
+        val heightDp = with(density) { size.height.toDp() }
+        assertTrue("card width was $widthDp dp", widthDp >= 48.dp)
+        assertTrue("card height was $heightDp dp", heightDp >= 48.dp)
     }
 }

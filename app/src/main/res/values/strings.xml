@@ -1,4 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Offline Workout</string>
+    <!-- Lote 2 (redesign): textos internos dos componentes compartilhados.
+         Nenhum componente usa literal visível; telas passam seus textos por parâmetro. -->
+    <string name="common_back">Voltar</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_loading">Carregando</string>
+    <string name="rest_title">Descanso</string>
+    <string name="numeric_empty">—</string>
+    <string name="step_dots_description">Exercício %1$d de %2$d</string>
+    <!-- Lote 3 (redesign): lista -->
+    <string name="list_title">Treinos</string>
+    <string name="list_create">Criar treino</string>
+    <string name="list_create_short">Criar</string>
+    <string name="list_backup">Backup</string>
+    <string name="list_edit">Editar</string>
+    <string name="list_history">Histórico</string>
+    <string name="list_execute_cd">Executar %1$s</string>
+    <string name="list_edit_cd">Editar %1$s</string>
+    <string name="list_history_cd">Ver histórico de %1$s</string>
+    <string name="list_loading_cd">Carregando treinos</string>
+    <string name="list_label">Lista de treinos</string>
+    <string name="list_empty_title">Nenhum treino ainda</string>
+    <string name="list_empty_text">Crie seu primeiro treino para começar a registrar séries.</string>
+    <string name="list_error">Não foi possível carregar os treinos.</string>
+    <string name="list_retry">Tentar novamente</string>
+    <!-- Lote 4 (redesign): backup -->
+    <string name="backup_title">Backup</string>
+    <string name="backup_export_title">Exportar seus dados</string>
+    <string name="backup_export_text">Gere um arquivo com todos os treinos, séries e histórico. Guarde onde quiser.</string>
+    <string name="backup_export_action">Exportar arquivo</string>
+    <string name="backup_import_title">Restaurar de um backup</string>
+    <string name="backup_import_warning">Importar substitui todos os dados deste aparelho. Não há como desfazer.</string>
+    <string name="backup_import_action">Escolher arquivo…</string>
+    <string name="backup_system_off">O backup do sistema está desligado — só sai deste aparelho por aqui.</string>
+    <string name="backup_preview_title">Prévia da importação</string>
+    <string name="backup_checksum_label">Soma de verificação: %1$s</string>
+    <string name="backup_integrity">Integridade verificada</string>
+    <string name="backup_count_workouts">treinos</string>
+    <string name="backup_count_exercises">exercícios</string>
+    <string name="backup_count_sessions">sessões</string>
+    <string name="backup_count_sets">séries</string>
+    <string name="backup_replace_warning">Isto substituirá todos os dados locais</string>
+    <string name="backup_no_undo">Seu treino atual e todo o histórico serão apagados. Esta ação não pode ser desfeita.</string>
+    <string name="backup_replace_all">Substituir tudo</string>
+    <string name="backup_cancel">Cancelar</string>
+    <string name="backup_exported">Backup exportado: %1$s</string>
+    <string name="backup_shared">Backup compartilhado</string>
+    <string name="backup_import_done">Importação concluída: %1$d treinos, %2$d exercícios, %3$d execuções</string>
+    <string name="backup_share">Compartilhar</string>
+    <string name="backup_share_cd">Compartilhar arquivo de backup</string>
+    <string name="backup_export_again">Exportar novamente</string>
+    <string name="backup_pick_another">Escolher outro arquivo</string>
+    <string name="backup_retry">Tentar novamente</string>
+    <string name="backup_intact">Nada foi alterado — seus dados atuais continuam intactos.</string>
+    <string name="backup_working_cd">Processando backup</string>
+    <string name="backup_working_export">Exportando…</string>
+    <string name="backup_working_share">Preparando compartilhamento…</string>
+    <string name="backup_working_import">Importando…</string>
+    <string name="backup_err_corrupt">Arquivo de backup inválido.</string>
+    <string name="backup_err_version">Versão de backup não suportada.</string>
+    <string name="backup_err_checksum">Integridade inválida.</string>
+    <string name="backup_err_validation">Dados inválidos no backup.</string>
+    <string name="backup_err_referential">Backup com referências inválidas.</string>
+    <string name="backup_err_storage">Falha de armazenamento.</string>
 </resources>

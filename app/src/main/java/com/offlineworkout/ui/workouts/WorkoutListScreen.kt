@@ -3,37 +3,38 @@ package com.offlineworkout.ui.workouts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.offlineworkout.R
 import com.offlineworkout.data.model.WorkoutSummary
+import com.offlineworkout.ui.components.AppTopBar
+import com.offlineworkout.ui.components.ErrorCard
+import com.offlineworkout.ui.components.LoadingSkeleton
+import com.offlineworkout.ui.components.PrimaryButton
 import com.offlineworkout.viewmodel.WorkoutListUiState
 
-// T3.1: tela stateless da lista de treinos (Material 3). Textos de estado curtos,
-// sem contadores, histórico ou RPE. Botões textuais separados com alvos de 48dp
-// e descrições contextuais. T4.1: ação textual Criar treino abre o editor.
-// T7.1: ação textual Histórico abre o histórico do treino.
-// T8.1: ação textual Backup abre a ferramenta local de backup.
+// Redesign lote 3: TopAppBar com Criar/Backup, card inteiro executa,
+// skeleton no loading, ErrorCard no erro, empty state com CTA.
+// Assinatura inalterada (8 params do plano §4).
 @Composable
 fun WorkoutListScreen(
     state: WorkoutListUiState,
@@ -45,104 +46,103 @@ fun WorkoutListScreen(
     onHistorySelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Scaffold(modifier = modifier) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Treinos",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.semantics { heading() }
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            AppTopBar(
+                title = stringResource(R.string.list_title),
+                actions = {
+                    TextButton(
+                        onClick = onCreateSelected,
+                        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                    ) {
+                        Text(text = stringResource(R.string.list_create_short))
+                    }
+                    TextButton(
+                        onClick = onBackupSelected,
+                        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                    ) {
+                        Text(text = stringResource(R.string.list_backup))
+                    }
+                }
             )
-            Text(
-                text = "Escolha um treino para executar ou editar.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
+        }
+    ) { padding ->
+        when (state) {
+            WorkoutListUiState.Loading -> LoadingState(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
             )
-            Button(
-                onClick = onCreateSelected,
+            WorkoutListUiState.Empty -> EmptyState(
+                onCreateSelected = onCreateSelected,
                 modifier = Modifier
-                    .padding(bottom = 12.dp)
-                    .heightIn(min = 48.dp)
-            ) {
-                Text(text = "Criar treino")
-            }
-            OutlinedButton(
-                onClick = onBackupSelected,
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+            )
+            is WorkoutListUiState.Error -> Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .padding(bottom = 12.dp)
-                    .heightIn(min = 48.dp)
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .semantics { liveRegion = LiveRegionMode.Assertive }
             ) {
-                Text(text = "Backup")
-            }
-            when (state) {
-                WorkoutListUiState.Loading -> LoadingState(Modifier.fillMaxSize())
-                WorkoutListUiState.Empty -> EmptyState(Modifier.fillMaxSize())
-                is WorkoutListUiState.Error -> ErrorState(onRetry, Modifier.fillMaxSize())
-                is WorkoutListUiState.Success -> WorkoutCards(
-                    workouts = state.workouts,
-                    onExecutionSelected = onExecutionSelected,
-                    onEditSelected = onEditSelected,
-                    onHistorySelected = onHistorySelected,
-                    modifier = Modifier.fillMaxSize()
+                ErrorCard(
+                    message = stringResource(R.string.list_error),
+                    recoveryLabel = stringResource(R.string.list_retry),
+                    onRecovery = onRetry,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
+            is WorkoutListUiState.Success -> WorkoutCards(
+                workouts = state.workouts,
+                onExecutionSelected = onExecutionSelected,
+                onEditSelected = onEditSelected,
+                onHistorySelected = onHistorySelected,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            )
         }
     }
 }
 
 @Composable
 private fun LoadingState(modifier: Modifier = Modifier) {
+    val loadingDescription = stringResource(R.string.list_loading_cd)
     Box(
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.TopCenter,
         modifier = modifier.semantics {
-            contentDescription = "Carregando treinos"
-            liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite
+            contentDescription = loadingDescription
+            liveRegion = LiveRegionMode.Polite
         }
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator()
-            Text(
-                text = "Carregando treinos…",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 12.dp)
-            )
-        }
+        LoadingSkeleton(lines = 2, modifier = Modifier.fillMaxWidth())
     }
 }
 
 @Composable
-private fun EmptyState(modifier: Modifier = Modifier) {
+private fun EmptyState(onCreateSelected: () -> Unit, modifier: Modifier = Modifier) {
     Box(contentAlignment = Alignment.Center, modifier = modifier) {
-        Text(
-            text = "Nenhum treino disponível.",
-            style = MaterialTheme.typography.bodyLarge
-        )
-    }
-}
-
-@Composable
-private fun ErrorState(onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier.semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Assertive }
-    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Não foi possível carregar os treinos.",
-                style = MaterialTheme.typography.bodyLarge
+                text = stringResource(R.string.list_empty_title),
+                style = MaterialTheme.typography.titleLarge
             )
-            Button(
-                onClick = onRetry,
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .heightIn(min = 48.dp)
-            ) {
-                Text(text = "Tentar novamente")
-            }
+            Text(
+                text = stringResource(R.string.list_empty_text),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp, bottom = 20.dp)
+            )
+            PrimaryButton(
+                text = stringResource(R.string.list_create),
+                onClick = onCreateSelected,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -155,63 +155,26 @@ private fun WorkoutCards(
     onHistorySelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val listDescription = stringResource(R.string.list_label)
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier.semantics { contentDescription = "Lista de treinos" }
+        modifier = modifier
+            .padding(16.dp)
+            .semantics { contentDescription = listDescription }
     ) {
         items(workouts, key = { it.id }) { workout ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = workout.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.semantics { heading() }
-                    )
-                    Text(
-                        text = "Treino ${workout.code}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        TextButton(
-                            onClick = { onExecutionSelected(workout.id) },
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        ) {
-                            Text(
-                                text = "Executar",
-                                modifier = Modifier.semantics {
-                                    contentDescription = "Executar ${workout.name}"
-                                }
-                            )
-                        }
-                        TextButton(
-                            onClick = { onEditSelected(workout.id) },
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        ) {
-                            Text(
-                                text = "Editar",
-                                modifier = Modifier.semantics {
-                                    contentDescription = "Editar ${workout.name}"
-                                }
-                            )
-                        }
-                        TextButton(
-                            onClick = { onHistorySelected(workout.id) },
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        ) {
-                            Text(
-                                text = "Histórico",
-                                modifier = Modifier.semantics {
-                                    contentDescription = "Ver histórico de ${workout.name}"
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+            // exerciseCount/totalRestSeconds ainda não existem no repositório
+            // (proibido neste lote): contrato recebido, exibição pendente.
+            WorkoutCard(
+                name = workout.name,
+                exerciseCount = 0,
+                totalRestSeconds = 0,
+                code = workout.code,
+                onCardClick = { onExecutionSelected(workout.id) },
+                onEditClick = { onEditSelected(workout.id) },
+                onHistoryClick = { onHistorySelected(workout.id) },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
