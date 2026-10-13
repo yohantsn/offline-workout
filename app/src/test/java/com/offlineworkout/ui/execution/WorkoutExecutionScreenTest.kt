@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.unit.dp
 import com.offlineworkout.data.model.ExerciseSpec
 import com.offlineworkout.data.model.ExerciseType
 import com.offlineworkout.data.repository.RepositoryFailure
@@ -70,7 +71,7 @@ class WorkoutExecutionScreenTest {
         seriesSets = if (spec.type == ExerciseType.SERIES) {
             listOf(
                 SeriesSetInputState(1, "10", "", null),
-                SeriesSetInputState(2, "", "", null)
+                SeriesSetInputState(2, "7", "", null)
             )
         } else {
             emptyList()
@@ -314,6 +315,21 @@ class WorkoutExecutionScreenTest {
     }
 
     @Test
+    fun timed_complete_exercise_is_primary_64dp() {
+        // Não-verificado do reviewer: em não-séries o CTA é "Concluir
+        // exercício" em primário (64 dp provam o peso, não só a existência).
+        val calls = Calls()
+        idleScreen(ready(selected = 2L), calls)
+        val cta = composeTestRule.onNodeWithText("Concluir exercício")
+        cta.assertExists()
+        val density = composeTestRule.density
+        val heightDp = with(density) { cta.fetchSemanticsNode().size.height.toDp() }
+        assertTrue("timed CTA height was $heightDp dp", heightDp >= 64.dp)
+        cta.performClick()
+        composeTestRule.runOnIdle { assertEquals(listOf(2L), calls.completedExercises) }
+    }
+
+    @Test
     fun strip_selects_exercise() {
         val calls = Calls()
         idleScreen(ready(), calls)
@@ -347,10 +363,10 @@ class WorkoutExecutionScreenTest {
     fun reps_input_dispatches() {
         val calls = Calls()
         idleScreen(ready(), calls)
-        // O NumericField vazio mostra "—" (placeholder fundido ao campo).
-        // "—" existentes: série 1 kg, série 2 reps, série 2 kg (série 1 reps
-        // tem "10"). Índice 1 = reps da série 2.
-        composeTestRule.onAllNodesWithText("—")[1].performTextReplacement("12")
+        // Valor único no campo ("7" só existe nas reps da série 2): sem
+        // índice posicional frágil — se a ordem dos campos mudar, o teste
+        // falha por não achar, nunca digitando no campo errado.
+        composeTestRule.onNodeWithText("7").performTextReplacement("12")
         composeTestRule.runOnIdle { assertTrue(calls.repsInputs.contains("12")) }
     }
 

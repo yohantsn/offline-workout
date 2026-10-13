@@ -264,7 +264,10 @@ private fun PreviewSheet(
                     Text(
                         text = fileName,
                         style = MaterialTheme.typography.titleMedium,
-                        color = scheme.onSurface
+                        color = scheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false
                     )
                     Text(
                         text = stringResource(
@@ -456,8 +459,9 @@ private fun SuccessBlock(
                             text = detail,
                             style = MaterialTheme.typography.bodyMedium,
                             color = success.onSuccessContainer,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
                         )
                     }
                 }
@@ -488,10 +492,13 @@ private fun SuccessBlock(
             }
             OutlinedButton(
                 onClick = onExport,
+                // Colateral do B-3: sobre successContainer, o outline neutro
+                // some (1.30:1 light, 1.02:1 dark) — borda e texto explícitos
+                // em onSuccessContainer (6.77:1 nos dois temas).
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = scheme.primary
+                    contentColor = success.onSuccessContainer
                 ),
-                border = BorderStroke(1.dp, scheme.outline),
+                border = BorderStroke(1.dp, success.onSuccessContainer),
                 modifier = Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)

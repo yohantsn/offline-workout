@@ -90,6 +90,10 @@ class ThemeContrastTest {
 
     @Test
     fun light_onSecondary_on_secondary_passes_3_but_is_reported_below_45() {
+        // Trava documentada (NÃO tautologia decorativa): a spec manda manter
+        // a cor, então este teste QUEBRA se alguém "consertar" o token para
+        // cima (sai da faixa) ou se um uso novo exigir 4.5. Faixa travada:
+        // serve como gráfico/texto grande (≥3.0), nunca como texto normal.
         val r = ratio(0xFFFFFFFF, 0xFF0D9488)
         assertTrue("expected >= 3.0, was $r", r >= 3.0)
         assertTrue("REPORTED: light onSecondary/secondary is $r (< 4.5), spec color kept", r < 4.5)
@@ -97,6 +101,7 @@ class ThemeContrastTest {
 
     @Test
     fun light_onTertiary_on_tertiary_passes_3_but_is_reported_below_45() {
+        // Idem acima: trava a cor da spec na faixa [3.0, 4.5).
         val r = ratio(0xFFFFFFFF, 0xFFD97706)
         assertTrue("expected >= 3.0, was $r", r >= 3.0)
         assertTrue("REPORTED: light onTertiary/tertiary is $r (< 4.5), spec color kept", r < 4.5)

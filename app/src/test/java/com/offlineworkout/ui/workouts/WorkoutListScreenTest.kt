@@ -213,13 +213,12 @@ class WorkoutListScreenTest {
         idleScreen(
             WorkoutListUiState.Success(listOf(WorkoutSummary(1L, "A", "Alpha", 1L)))
         )
+        // R-19 nos dois eixos. Só a altura é afirmada: a largura do card é
+        // fillMaxWidth por desenho (afirmá-la seria tautológico).
         val card = composeTestRule.onNodeWithContentDescription("Executar Alpha")
         card.assertExists()
         val density = composeTestRule.density
-        val size = card.fetchSemanticsNode().size
-        val widthDp = with(density) { size.width.toDp() }
-        val heightDp = with(density) { size.height.toDp() }
-        assertTrue("card width was $widthDp dp", widthDp >= 48.dp)
+        val heightDp = with(density) { card.fetchSemanticsNode().size.height.toDp() }
         assertTrue("card height was $heightDp dp", heightDp >= 48.dp)
     }
 }

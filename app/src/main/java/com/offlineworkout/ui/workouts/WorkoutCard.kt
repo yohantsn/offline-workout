@@ -70,8 +70,9 @@ fun WorkoutCard(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.titleLarge,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    softWrap = false,
                     modifier = Modifier
                         .weight(1f)
                         .semantics { heading() }

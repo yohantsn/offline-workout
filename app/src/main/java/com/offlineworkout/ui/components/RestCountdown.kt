@@ -16,6 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.offlineworkout.R
 
@@ -44,10 +47,13 @@ fun RestCountdown(
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Polite SÓ no status (anuncia a entrada do descanso). Nunca no
+            // número: anunciar a cada segundo seria flood de TalkBack.
             Text(
                 text = stringResource(R.string.rest_title),
                 style = MaterialTheme.typography.titleMedium,
-                color = scheme.onTertiaryContainer
+                color = scheme.onTertiaryContainer,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
             )
             Text(
                 text = "%d:%02d".format(safeRemaining / 60, safeRemaining % 60),
