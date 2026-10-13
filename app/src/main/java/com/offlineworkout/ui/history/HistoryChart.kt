@@ -24,6 +24,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.offlineworkout.data.model.ExerciseType
 import com.offlineworkout.data.model.HistoryChartData
+import com.offlineworkout.data.model.HistoryPoint
+import com.offlineworkout.ui.theme.LocalSuccessColors
 import java.text.DateFormat
 import java.util.Date
 
@@ -42,6 +44,8 @@ fun HistoryChart(
     val minTs = remember(data) { data.points.minOfOrNull { it.timestampWallClockMs } ?: 0L }
     val maxTs = remember(data) { data.points.maxOfOrNull { it.timestampWallClockMs } ?: 0L }
     val colors = MaterialTheme.colorScheme
+    val success = LocalSuccessColors.current.success
+    val peak = remember(data) { peakPrimaryPoint(data.points) }
 
     Column(
         modifier = modifier.semantics { contentDescription = chartDescription(data) }
@@ -136,6 +140,19 @@ fun HistoryChart(
                                 center = Offset(xOf(point.timestampWallClockMs), yOf(point.primaryValue!!, primaryScale))
                             )
                         }
+                        // Redesign: pico da métrica principal destacado em
+                        // success (texto e tabela continuam sendo a leitura
+                        // exata — o gráfico nunca é a única forma de ler).
+                        if (peak?.primaryValue != null) {
+                            drawCircle(
+                                color = success,
+                                radius = pointRadius * PEAK_RADIUS_MULTIPLIER,
+                                center = Offset(
+                                    xOf(peak.timestampWallClockMs),
+                                    yOf(peak.primaryValue, primaryScale)
+                                )
+                            )
+                        }
                     }
                 }
                 Text(
@@ -177,6 +194,13 @@ private fun XDateLabels(minTs: Long, maxTs: Long) {
 
 fun formatHistoryDate(wallClockMs: Long): String =
     DateFormat.getDateInstance(DateFormat.SHORT).format(Date(wallClockMs))
+
+// Ponto de pico da métrica principal (maior valor; primeiro em empate).
+// Puro e unit-testado; o desenho só o realça, a leitura exata está na tabela.
+fun peakPrimaryPoint(points: List<HistoryPoint>): HistoryPoint? {
+    val max = points.mapNotNull { it.primaryValue }.maxOrNull() ?: return null
+    return points.firstOrNull { it.primaryValue == max }
+}
 
 // Scale with padding; equal values get a minimal band. Pure and unit-tested.
 fun scaleOf(values: List<Double>): Pair<Double, Double> {
@@ -238,3 +262,4 @@ private fun legendSecondary(data: HistoryChartData): String =
 internal const val AXIS_STROKE_DP = 2f
 internal const val SERIES_STROKE_DP = 4f
 internal const val POINT_RADIUS_DP = 6f
+internal const val PEAK_RADIUS_MULTIPLIER = 1.5f

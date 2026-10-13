@@ -2,6 +2,7 @@ package com.offlineworkout.ui.history
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -207,7 +208,11 @@ class WorkoutHistoryScreenTest {
             calls
         )
         composeTestRule.onNodeWithText("Gráfico simplificado para 2 de 500 pontos").assertExists()
-        composeTestRule.onNodeWithText("Próximo").performClick()
+        // O aviso também vai no subtítulo do card, com período e unidade.
+        val period = "${formatHistoryDate(1000L)} – ${formatHistoryDate(2000L)}"
+        composeTestRule.onNodeWithText("$period · kg · 2 de 500 pontos").assertExists()
+        // O seletor virou chips: tocar no chip seleciona direto, sem Anterior/Próximo.
+        composeTestRule.onNodeWithContentDescription("Ver histórico de Two").performClick()
         composeTestRule.runOnIdle { assertEquals(listOf(2L), calls.selected) }
     }
 
@@ -306,5 +311,69 @@ class WorkoutHistoryScreenTest {
     fun empty_history_message() {
         idleScreen(ready(rows = emptyList(), chartData = null, statsData = HistoryStats(1L, 0, null, null)))
         composeTestRule.onNodeWithText("Sem execuções para este exercício").assertExists()
+    }
+
+    @Test
+    fun summary_tiles_show_sessions_and_last_load() {
+        idleScreen(ready())
+        composeTestRule.onNodeWithText("Sessões").assertExists()
+        composeTestRule.onNodeWithText("2").assertExists()
+        composeTestRule.onNodeWithText("Última carga").assertExists()
+        composeTestRule.onNodeWithText("60.0").assertExists()
+        composeTestRule.onNodeWithText("kg").assertExists()
+    }
+
+    @Test
+    fun selector_collapses_to_plus_n_beyond_four() {
+        val calls = Calls()
+        val six = (1L..6L).map { seriesSpec(it, "Ex$it") }
+        idleScreen(
+            ready(exercises = six, selected = null, rows = emptyList(), chartData = null, statsData = null),
+            calls
+        )
+        // Colapsado: 4 primeiros + Todos + "+2"; o quinto fica oculto.
+        // A fileira é lazy: rola até o "+2" para compô-lo antes de tocar.
+        composeTestRule.onNodeWithText("Ex4").assertExists()
+        composeTestRule.onNodeWithTag("exerciseChips").performScrollToIndex(5)
+        composeTestRule.onNodeWithText("+2").assertExists()
+        composeTestRule.onAllNodesWithText("Ex5").assertCountEquals(0)
+        // Expandir revela todos; tocar seleciona.
+        composeTestRule.onNodeWithText("+2").performClick()
+        composeTestRule.onNodeWithText("Ex5").assertExists()
+        composeTestRule.onNodeWithTag("exerciseChips").performScrollToIndex(7)
+        composeTestRule.onNodeWithText("Mostrar menos").assertExists()
+        composeTestRule.onNodeWithTag("exerciseChips").performScrollToIndex(6)
+        composeTestRule.onNodeWithContentDescription("Ver histórico de Ex6").performClick()
+        composeTestRule.runOnIdle { assertEquals(listOf(6L), calls.selected) }
+        // Recolher volta ao estado inicial.
+        composeTestRule.onNodeWithTag("exerciseChips").performScrollToIndex(7)
+        composeTestRule.onNodeWithText("Mostrar menos").performClick()
+        composeTestRule.onAllNodesWithText("Ex5").assertCountEquals(0)
+    }
+
+    @Test
+    fun selecting_all_chip_clears_selection() {
+        val calls = Calls()
+        idleScreen(ready(), calls)
+        composeTestRule.onNodeWithText("Todos").performClick()
+        composeTestRule.runOnIdle { assertEquals(1, calls.cleared) }
+    }
+
+    @Test
+    fun rows_group_by_day_with_headers() {
+        // Dois dias distintos: 1_700_000_000_000L e +1 dia. A lista é lazy,
+        // então cada cabeçalho é provado enquanto está na dobra: o texto de
+        // data exata só existe no DayHeader (as linhas trazem data+hora).
+        val day1 = 1_700_000_000_000L
+        val day2 = day1 + 86_400_000L
+        idleScreen(
+            ready(
+                rows = listOf(execution(11L, day2), execution(10L, day1)),
+                chartData = null
+            )
+        )
+        composeTestRule.onNodeWithText(formatHistoryDate(day2)).assertExists()
+        composeTestRule.onNodeWithTag("historyList").performScrollToIndex(6)
+        composeTestRule.onNodeWithText(formatHistoryDate(day1)).assertExists()
     }
 }

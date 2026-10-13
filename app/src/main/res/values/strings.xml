@@ -73,4 +73,33 @@
     <string name="backup_err_validation">Dados inválidos no backup.</string>
     <string name="backup_err_referential">Backup com referências inválidas.</string>
     <string name="backup_err_storage">Falha de armazenamento.</string>
+    <!-- Lote 5 (redesign): histórico -->
+    <string name="history_title_fallback">Histórico</string>
+    <string name="history_today">Hoje</string>
+    <string name="history_all">Todos</string>
+    <string name="history_show_more">+%d</string>
+    <string name="history_show_less">Mostrar menos</string>
+    <string name="history_sessions">Sessões</string>
+    <string name="history_last_load">Última carga</string>
+    <string name="history_last_duration">Última duração</string>
+    <string name="history_last_distance">Última distância</string>
+    <string name="history_chart_series">Evolução da carga</string>
+    <string name="history_chart_timed">Evolução da duração</string>
+    <string name="history_chart_distance">Evolução da distância</string>
+    <string name="history_chart_points">%d pontos</string>
+    <string name="history_chart_points_sub">%d de %d pontos</string>
+    <string name="history_chart_subtitle">%1$s · %2$s · %3$s</string>
+    <string name="history_summary_head">%1$d execuções • primeira %2$s</string>
+    <string name="history_metric_weight">último peso: %1$s kg</string>
+    <string name="history_metric_duration">última duração: %1$s s</string>
+    <string name="history_metric_distance">última distância: %1$s m</string>
+    <string name="history_error">Não foi possível carregar o histórico.</string>
+    <string name="history_retry">Tentar novamente</string>
+    <string name="history_back">Voltar para treinos</string>
+    <string name="history_empty">Sem execuções para este exercício</string>
+    <string name="history_stats_warning">Não foi possível carregar o resumo</string>
+    <string name="history_page_error">Não foi possível carregar mais itens.</string>
+    <string name="history_load_more">Carregar mais</string>
+    <string name="history_loading">Carregando…</string>
+    <string name="history_exercise_cd">Ver histórico de %1$s</string>
 </resources>
