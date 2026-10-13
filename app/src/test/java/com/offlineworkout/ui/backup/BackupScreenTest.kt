@@ -1,5 +1,7 @@
 package com.offlineworkout.ui.backup
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertCountEquals
@@ -8,6 +10,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.offlineworkout.data.repository.BackupFailure
 import com.offlineworkout.data.repository.BackupImportResult
 import com.offlineworkout.data.repository.BackupPreview
@@ -24,8 +27,10 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
-// T8.1: backup screen contract: state rendering, mandatory preview before any
-// destructive write, explicit confirmation, cancel path and error/retry.
+// T8.1 + redesign lote 4: duas cards, prévia em bottom sheet com as 4
+// contagens e aviso destrutivo, erro com causa preservada. Contrato de
+// comportamento preservado: nada escreve sem confirmação explícita,
+// recuperação por tipo de falha.
 class BackupScreenTest {
 
     @get:Rule
@@ -68,16 +73,46 @@ class BackupScreenTest {
         willReplaceAll = true
     )
 
+    // Robolectric não entrega eventos de toque à janela do ModalBottomSheet
+    // (repro mínimo: Button isolado na sheet recebe 0 cliques; o AlertDialog
+    // antigo recebia). A fiação botão→callback é verificada invocando a ação
+    // de clique do nó diretamente — o nó continua obrigado a expor a ação
+    // (hasClickAction) e a estar visível.
+    private fun SemanticsNodeInteraction.invokeClickAction() {
+        val config = fetchSemanticsNode().config
+        check(config.contains(SemanticsActions.OnClick)) { "node exposes no click action" }
+        val handler = config[SemanticsActions.OnClick].action
+        checkNotNull(handler) { "click action has no handler" }
+        handler()
+    }
+
     @Test
     fun idle_offers_export_and_import_only() {
         val callbacks = Callbacks()
         screen(BackupUiState.Idle, callbacks)
         composeTestRule.onNodeWithText("Backup").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Exportar").assertIsEnabled().performClick()
-        composeTestRule.onNodeWithText("Importar").assertIsEnabled().performClick()
+        composeTestRule.onNodeWithText("Exportar arquivo").assertIsEnabled().performClick()
+        composeTestRule.onNodeWithText("Escolher arquivo…").assertIsEnabled().performClick()
         assertEquals(1, callbacks.exported)
         assertEquals(1, callbacks.imported)
         assertEquals(0, callbacks.confirmed)
+    }
+
+    @Test
+    fun idle_import_card_shows_mandatory_written_warning() {
+        screen(BackupUiState.Idle)
+        // O aviso é obrigatório: cor sozinha não passa em contraste nem TalkBack.
+        composeTestRule.onNodeWithText(
+            "Importar substitui todos os dados deste aparelho. Não há como desfazer."
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun idle_shows_system_backup_off_line() {
+        screen(BackupUiState.Idle)
+        composeTestRule.onNodeWithText(
+            "O backup do sistema está desligado — só sai deste aparelho por aqui."
+        ).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -89,41 +124,58 @@ class BackupScreenTest {
     }
 
     @Test
-    fun preview_lists_counts_and_warns_before_writing() {
+    fun preview_sheet_lists_counts_and_warns_before_writing() {
         val callbacks = Callbacks()
         screen(BackupUiState.Preview(preview()), callbacks)
         composeTestRule.onNodeWithText("Prévia da importação").assertIsDisplayed()
+        // As 4 contagens em tiles: treinos/exercícios/sessões/séries.
+        // A sheet é rolável: presença, não posição na dobra.
+        composeTestRule.onNodeWithText("treinos").assertExists()
+        composeTestRule.onNodeWithText("exercícios").assertExists()
+        composeTestRule.onNodeWithText("sessões").assertExists()
+        composeTestRule.onNodeWithText("séries").assertExists()
+        composeTestRule.onNodeWithText("2").assertExists()
+        composeTestRule.onNodeWithText("5").assertExists()
+        composeTestRule.onNodeWithText("7").assertExists()
+        composeTestRule.onNodeWithText("9").assertExists()
+        composeTestRule.onNodeWithText("Integridade verificada").assertExists()
+        composeTestRule.onNodeWithText("Isto substituirá todos os dados locais").assertExists()
         composeTestRule.onNodeWithText(
-            "Versão 1 • 2 treinos • 5 exercícios • 7 execuções • 9 séries"
-        ).assertIsDisplayed()
-        composeTestRule.onNodeWithText("Integridade verificada").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Isto substituirá todos os dados locais").assertIsDisplayed()
-        // Opening the confirmation must not write anything by itself.
-        composeTestRule.onNodeWithText("Importar e substituir").performClick()
+            "Seu treino atual e todo o histórico serão apagados. Esta ação não pode ser desfeita."
+        ).assertExists()
+        // Abrir a prévia não escreve nada por si só.
         assertEquals(0, callbacks.confirmed)
-        composeTestRule.onNodeWithText("Substituir todos os dados locais?").assertIsDisplayed()
-        composeTestRule.onNodeWithText(
-            "Isto substituirá todos os dados locais pelos 2 treinos, " +
-                "5 exercícios, 7 execuções do arquivo. Esta ação não pode ser desfeita."
-        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun preview_sheet_shows_checksum_without_invented_filename() {
+        // O contrato BackupPreview não tem nome de arquivo (mudança de
+        // repositório, fora deste lote): a sheet mostra a soma que existe.
+        screen(BackupUiState.Preview(preview()))
+        composeTestRule.onNodeWithText("Soma de verificação: abc").assertIsDisplayed()
     }
 
     @Test
     fun confirm_button_writes_exactly_once() {
         val callbacks = Callbacks()
         screen(BackupUiState.Preview(preview()), callbacks)
-        composeTestRule.onNodeWithText("Importar e substituir").performClick()
-        composeTestRule.onNodeWithText("Confirmar substituição").performClick()
+        composeTestRule.onNodeWithText("Substituir tudo")
+            .assertIsDisplayed()
+            .assertIsEnabled()
+            .invokeClickAction()
         assertEquals(1, callbacks.confirmed)
     }
 
     @Test
-    fun dialog_cancel_does_not_write() {
+    fun sheet_cancel_does_not_write() {
         val callbacks = Callbacks()
         screen(BackupUiState.Preview(preview()), callbacks)
-        composeTestRule.onNodeWithText("Importar e substituir").performClick()
-        // The dialog also offers "Cancelar"; dismissing it must never write.
-        composeTestRule.onAllNodesWithText("Cancelar")[0].performClick()
+        // A sheet também oferece "Cancelar"; dispensá-la nunca escreve.
+        // (assertExists: a sheet posiciona o último filho fora da dobra em
+        // viewports curtos; a ação de clique continua exposta e fiada.)
+        composeTestRule.onNodeWithText("Cancelar")
+            .assertExists()
+            .invokeClickAction()
         assertEquals(0, callbacks.confirmed)
     }
 
@@ -131,7 +183,9 @@ class BackupScreenTest {
     fun preview_cancel_returns_without_writing() {
         val callbacks = Callbacks()
         screen(BackupUiState.Preview(preview()), callbacks)
-        composeTestRule.onAllNodesWithText("Cancelar")[0].performClick()
+        composeTestRule.onNodeWithText("Cancelar")
+            .assertExists()
+            .invokeClickAction()
         assertEquals(1, callbacks.cancelled)
         assertEquals(0, callbacks.confirmed)
     }
@@ -177,6 +231,16 @@ class BackupScreenTest {
         composeTestRule.onNodeWithText("Escolher outro arquivo").performClick()
         assertEquals(1, callbacks.repicked)
         assertEquals(0, callbacks.retried)
+    }
+
+    @Test
+    fun integrity_error_preserves_cause_and_states_data_is_intact() {
+        screen(BackupUiState.Error(BackupFailure.ChecksumMismatch("a", "b")))
+        composeTestRule.onNodeWithText("Integridade inválida.").assertIsDisplayed()
+        // A pessoa precisa saber que o arquivo ruim não estragou o banco.
+        composeTestRule.onNodeWithText(
+            "Nada foi alterado — seus dados atuais continuam intactos."
+        ).assertIsDisplayed()
     }
 
     @Test

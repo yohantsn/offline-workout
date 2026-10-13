@@ -1,43 +1,58 @@
 package com.offlineworkout.ui.backup
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.offlineworkout.R
 import com.offlineworkout.data.repository.BackupFailure
+import com.offlineworkout.data.repository.BackupPreview
+import com.offlineworkout.ui.components.AppTopBar
+import com.offlineworkout.ui.components.ErrorCard
+import com.offlineworkout.ui.components.PrimaryButton
+import com.offlineworkout.ui.components.SecondaryButton
 import com.offlineworkout.viewmodel.BackupOperation
 import com.offlineworkout.viewmodel.BackupRecovery
+import com.offlineworkout.viewmodel.BackupUiResult
 import com.offlineworkout.viewmodel.BackupUiState
 
-// T8.1: stateless backup screen. Export/share/import with mandatory preview
-// and an explicit destructive confirmation dialog. No Room, no file IO here.
+// Redesign lote 4: duas cards (exportar/importar), prévia em bottom sheet,
+// ErrorCard no erro, linha D-2. Assinatura inalterada (plano §4).
+// T8.1/T8.3 mantidos: recuperação por tipo de falha, sem Room/IO aqui.
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongParameterList")
 fun BackupScreen(
     state: BackupUiState,
@@ -51,241 +66,335 @@ fun BackupScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showDestructiveDialog by remember { mutableStateOf(false) }
-    if (showDestructiveDialog) {
-        val preview = (state as? BackupUiState.Preview)?.preview
-        AlertDialog(
-            onDismissRequest = { showDestructiveDialog = false },
-            title = { Text(text = "Substituir todos os dados locais?") },
-            text = {
-                Text(
-                    text = "Isto substituirá todos os dados locais pelos " +
-                        "${preview?.workoutCount ?: 0} treinos, " +
-                        "${preview?.exerciseCount ?: 0} exercícios, " +
-                        "${preview?.executionCount ?: 0} execuções do arquivo. " +
-                        "Esta ação não pode ser desfeita."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDestructiveDialog = false
-                        onConfirmReplace()
-                    },
-                    modifier = Modifier.heightIn(min = 48.dp)
-                ) {
-                    Text(text = "Confirmar substituição")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDestructiveDialog = false
-                        onCancelPreview()
-                    },
-                    modifier = Modifier.heightIn(min = 48.dp)
-                ) {
-                    Text(text = "Cancelar")
-                }
-            }
-        )
-    }
-    Scaffold(modifier = modifier) { padding ->
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            AppTopBar(
+                title = stringResource(R.string.backup_title),
+                onBack = onBack
+            )
+        }
+    ) { padding ->
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
         ) {
-            item(key = "header") {
-                Column {
-                    Text(
-                        text = "Backup",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.semantics { heading() }
-                    )
-                    OutlinedButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .heightIn(min = 48.dp)
-                    ) {
-                        Text(text = "Voltar")
-                    }
-                }
-            }
-            when (state) {
-                BackupUiState.Idle -> {
-                    item(key = "actions") {
-                        // Idle never renders actions while Working, so both are
-                        // always enabled here (the duplicate-touch guard is the
-                        // ViewModel's single-operation state).
-                        ActionButtons(onExport = onExport, onImport = onImport)
-                    }
-                }
-                is BackupUiState.Working -> {
-                    item(key = "working") {
-                        WorkingBlock(operation = state.operation)
-                    }
-                }
-                is BackupUiState.Preview -> {
-                    val preview = state.preview
-                    item(key = "preview") {
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "Prévia da importação",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.semantics { heading() }
-                                )
-                                Text(
-                                    text = "Versão ${preview.schemaVersion} • " +
-                                        "${preview.workoutCount} treinos • " +
-                                        "${preview.exerciseCount} exercícios • " +
-                                        "${preview.executionCount} execuções • " +
-                                        "${preview.executionSetCount} séries",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                                Text(
-                                    text = "Integridade verificada",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                                Text(
-                                    text = "Isto substituirá todos os dados locais",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                                Button(
-                                    onClick = { showDestructiveDialog = true },
-                                    modifier = Modifier
-                                        .padding(top = 8.dp)
-                                        .heightIn(min = 48.dp)
-                                ) {
-                                    Text(text = "Importar e substituir")
-                                }
-                                OutlinedButton(
-                                    onClick = onCancelPreview,
-                                    modifier = Modifier
-                                        .padding(top = 8.dp)
-                                        .heightIn(min = 48.dp)
-                                ) {
-                                    Text(text = "Cancelar")
-                                }
-                            }
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                when (state) {
+                    BackupUiState.Idle -> {
+                        item(key = "cards") {
+                            ExportImportCards(onExport = onExport, onImport = onImport)
                         }
                     }
-                }
-                is BackupUiState.Success -> {
-                    val result = state.result
-                    item(key = "success") {
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(16.dp)
-                                    .semantics { liveRegion = LiveRegionMode.Polite }
+                    is BackupUiState.Working -> {
+                        item(key = "working") {
+                            WorkingBlock(operation = state.operation)
+                        }
+                    }
+                    is BackupUiState.Preview -> {
+                        // A prévia vive no sheet; atrás ficam as cards (como no
+                        // wireframe, esmaecidas pelo scrim).
+                        item(key = "cards") {
+                            ExportImportCards(onExport = onExport, onImport = onImport)
+                        }
+                    }
+                    is BackupUiState.Success -> {
+                        val result = state.result
+                        item(key = "success") {
+                            SuccessBlock(result = result, onShare = onShare, onExport = onExport)
+                        }
+                    }
+                    is BackupUiState.Error -> {
+                        item(key = "error") {
+                            Box(
+                                modifier = Modifier.semantics {
+                                    liveRegion = LiveRegionMode.Assertive
+                                }
                             ) {
-                                Text(
-                                    text = when (result.operation) {
-                                        BackupOperation.EXPORT -> "Backup exportado: ${result.fileName ?: ""}"
-                                        BackupOperation.SHARE -> "Backup compartilhado"
-                                        BackupOperation.IMPORT -> "Importação concluída: " +
-                                            "${result.importedCounts?.workoutCount ?: 0} treinos, " +
-                                            "${result.importedCounts?.exerciseCount ?: 0} exercícios, " +
-                                            "${result.importedCounts?.executionCount ?: 0} execuções"
-                                    },
-                                    style = MaterialTheme.typography.bodyLarge
+                                ErrorBlock(
+                                    failure = state.failure,
+                                    recovery = state.recovery,
+                                    onRetry = onRetry,
+                                    onPickAnotherFile = onPickAnotherFile,
+                                    modifier = Modifier.fillMaxWidth()
                                 )
-                                if (
-                                    result.operation == BackupOperation.EXPORT ||
-                                    result.operation == BackupOperation.SHARE
-                                ) {
-                                    Button(
-                                        onClick = onShare,
-                                        modifier = Modifier
-                                            .padding(top = 8.dp)
-                                            .heightIn(min = 48.dp)
-                                    ) {
-                                        Text(
-                                            text = "Compartilhar",
-                                            modifier = Modifier.semantics {
-                                                contentDescription = "Compartilhar arquivo de backup"
-                                            }
-                                        )
-                                    }
-                                }
-                                OutlinedButton(
-                                    onClick = onExport,
-                                    modifier = Modifier
-                                        .padding(top = 8.dp)
-                                        .heightIn(min = 48.dp)
-                                ) {
-                                    Text(text = "Exportar novamente")
-                                }
                             }
                         }
                     }
                 }
-                is BackupUiState.Error -> {
-                    item(key = "error") {
-                        ErrorBlock(
-                            failure = state.failure,
-                            recovery = state.recovery,
-                            onRetry = onRetry,
-                            onPickAnotherFile = onPickAnotherFile
-                        )
-                    }
+            }
+            if (state is BackupUiState.Preview) {
+                PreviewSheet(
+                    preview = state.preview,
+                    onConfirmReplace = onConfirmReplace,
+                    onCancelPreview = onCancelPreview
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExportImportCards(onExport: () -> Unit, onImport: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.backup_export_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.semantics { heading() }
+                )
+                Text(
+                    text = stringResource(R.string.backup_export_text),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                PrimaryButton(
+                    text = stringResource(R.string.backup_export_action),
+                    onClick = onExport,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.backup_import_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.semantics { heading() }
+                )
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.backup_import_warning),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+                OutlinedButton(
+                    onClick = onImport,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                ) {
+                    Text(text = stringResource(R.string.backup_import_action))
                 }
             }
         }
+        Text(
+            text = stringResource(R.string.backup_system_off),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
 @Composable
-private fun ActionButtons(
-    onExport: () -> Unit,
-    onImport: () -> Unit
+@OptIn(ExperimentalMaterial3Api::class)
+private fun PreviewSheet(
+    preview: BackupPreview,
+    onConfirmReplace: () -> Unit,
+    onCancelPreview: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(
-            onClick = onExport,
-            modifier = Modifier.heightIn(min = 48.dp)
+    val scheme = MaterialTheme.colorScheme
+    ModalBottomSheet(
+        onDismissRequest = onCancelPreview,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(text = "Exportar")
+            Text(
+                text = stringResource(R.string.backup_preview_title),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() }
+            )
+            Surface(
+                color = scheme.surfaceVariant,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.backup_checksum_label, preview.checksum),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = scheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.backup_integrity),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurfaceVariant
+                    )
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                CountBox(
+                    label = stringResource(R.string.backup_count_workouts),
+                    value = preview.workoutCount.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+                CountBox(
+                    label = stringResource(R.string.backup_count_exercises),
+                    value = preview.exerciseCount.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+                CountBox(
+                    label = stringResource(R.string.backup_count_sessions),
+                    value = preview.executionCount.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+                CountBox(
+                    label = stringResource(R.string.backup_count_sets),
+                    value = preview.executionSetCount.toString(),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Text(
+                text = stringResource(R.string.backup_replace_warning),
+                style = MaterialTheme.typography.titleMedium,
+                color = scheme.error
+            )
+            Text(
+                text = stringResource(R.string.backup_no_undo),
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant
+            )
+            Button(
+                onClick = onConfirmReplace,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = scheme.error,
+                    contentColor = scheme.onError
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            ) {
+                Text(text = stringResource(R.string.backup_replace_all))
+            }
+            SecondaryButton(
+                text = stringResource(R.string.backup_cancel),
+                onClick = onCancelPreview,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
-        Button(
-            onClick = onImport,
-            modifier = Modifier.heightIn(min = 48.dp)
+    }
+}
+
+// Contagem compacta da prévia (wireframe §3.5: 4 caixas em fileira, número
+// tabular). Screen-private: não é componente compartilhado.
+@Composable
+private fun CountBox(label: String, value: String, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        color = scheme.surfaceVariant,
+        shape = MaterialTheme.shapes.small,
+        modifier = modifier
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp)
         ) {
-            Text(text = "Importar")
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontFeatureSettings = "tnum"
+                ),
+                color = scheme.onSurface
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = scheme.onSurfaceVariant
+            )
         }
     }
 }
 
 @Composable
-private fun WorkingBlock(operation: BackupOperation) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics {
-                contentDescription = "Processando backup"
-                liveRegion = LiveRegionMode.Polite
-            }
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator()
+private fun SuccessBlock(
+    result: BackupUiResult,
+    onShare: () -> Unit,
+    onExport: () -> Unit
+) {
+    val scheme = MaterialTheme.colorScheme
+    val shareDescription = stringResource(R.string.backup_share_cd)
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text(
-                text = when (operation) {
-                    BackupOperation.EXPORT -> "Exportando…"
-                    BackupOperation.SHARE -> "Preparando compartilhamento…"
-                    BackupOperation.IMPORT -> "Importando…"
+                text = when (result.operation) {
+                    BackupOperation.EXPORT -> stringResource(
+                        R.string.backup_exported,
+                        result.fileName ?: ""
+                    )
+                    BackupOperation.SHARE -> stringResource(R.string.backup_shared)
+                    BackupOperation.IMPORT -> stringResource(
+                        R.string.backup_import_done,
+                        result.importedCounts?.workoutCount ?: 0,
+                        result.importedCounts?.exerciseCount ?: 0,
+                        result.importedCounts?.executionCount ?: 0
+                    )
                 },
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 12.dp)
+                style = MaterialTheme.typography.bodyLarge
+            )
+            if (
+                result.operation == BackupOperation.EXPORT ||
+                result.operation == BackupOperation.SHARE
+            ) {
+                Button(
+                    onClick = onShare,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = scheme.secondaryContainer,
+                        contentColor = scheme.onSecondaryContainer
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.backup_share),
+                        modifier = Modifier.semantics {
+                            contentDescription = shareDescription
+                        }
+                    )
+                }
+            }
+            SecondaryButton(
+                text = stringResource(R.string.backup_export_again),
+                onClick = onExport,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -296,49 +405,73 @@ private fun ErrorBlock(
     failure: BackupFailure,
     recovery: BackupRecovery,
     onRetry: () -> Unit,
-    onPickAnotherFile: () -> Unit
+    onPickAnotherFile: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { liveRegion = LiveRegionMode.Assertive }
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = errorMessage(failure),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            // T8.3: the offered action is the one that can actually recover —
-            // a file error re-arms the picker, a storage error retries.
-            if (recovery == BackupRecovery.PICK_ANOTHER_FILE) {
-                Button(
-                    onClick = onPickAnotherFile,
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .heightIn(min = 48.dp)
-                ) {
-                    Text(text = "Escolher outro arquivo")
-                }
+    // T8.3: a ação oferecida é a que realmente recupera — erro de arquivo
+    // rearma o picker, erro de storage tenta de novo. A causa é preservada no
+    // message; erro de arquivo afirma que nada foi alterado (o arquivo ruim
+    // nunca chega ao banco). Storage não afirma: a UI não sabe se a escrita
+    // parcial ocorreu.
+    val dataIntact = failure !is BackupFailure.Storage
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ErrorCard(
+            message = errorMessage(failure),
+            recoveryLabel = if (recovery == BackupRecovery.PICK_ANOTHER_FILE) {
+                stringResource(R.string.backup_pick_another)
             } else {
-                Button(
-                    onClick = onRetry,
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .heightIn(min = 48.dp)
-                ) {
-                    Text(text = "Tentar novamente")
-                }
-            }
+                stringResource(R.string.backup_retry)
+            },
+            onRecovery = if (recovery == BackupRecovery.PICK_ANOTHER_FILE) {
+                onPickAnotherFile
+            } else {
+                onRetry
+            },
+            modifier = modifier
+        )
+        if (dataIntact) {
+            Text(
+                text = stringResource(R.string.backup_intact),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
+@Composable
+private fun WorkingBlock(operation: BackupOperation) {
+    val workingDescription = stringResource(R.string.backup_working_cd)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = workingDescription
+                liveRegion = LiveRegionMode.Polite
+            }
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator()
+            Text(
+                text = when (operation) {
+                    BackupOperation.EXPORT -> stringResource(R.string.backup_working_export)
+                    BackupOperation.SHARE -> stringResource(R.string.backup_working_share)
+                    BackupOperation.IMPORT -> stringResource(R.string.backup_working_import)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 12.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun errorMessage(failure: BackupFailure): String = when (failure) {
-    is BackupFailure.Corrupt -> "Arquivo de backup inválido."
-    is BackupFailure.UnsupportedVersion -> "Versão de backup não suportada."
-    is BackupFailure.ChecksumMismatch -> "Integridade inválida."
-    is BackupFailure.Validation -> "Dados inválidos no backup."
-    is BackupFailure.ReferentiallyInvalid -> "Backup com referências inválidas."
-    is BackupFailure.Storage -> "Falha de armazenamento."
+    is BackupFailure.Corrupt -> stringResource(R.string.backup_err_corrupt)
+    is BackupFailure.UnsupportedVersion -> stringResource(R.string.backup_err_version)
+    is BackupFailure.ChecksumMismatch -> stringResource(R.string.backup_err_checksum)
+    is BackupFailure.Validation -> stringResource(R.string.backup_err_validation)
+    is BackupFailure.ReferentiallyInvalid -> stringResource(R.string.backup_err_referential)
+    is BackupFailure.Storage -> stringResource(R.string.backup_err_storage)
 }
