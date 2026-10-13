@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import com.offlineworkout.data.model.ExerciseInput
 import com.offlineworkout.data.model.ExerciseSpec
@@ -117,7 +118,8 @@ class WorkoutExecutionRouteTest {
         }
         composeTestRule.onNodeWithText("Alpha").assertExists()
         composeTestRule.onNodeWithContentDescription("Iniciar descanso de Squat").assertExists()
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(3)
+        // Strip no lugar da lista de cards: seleciona Plank e lê o descanso.
+        composeTestRule.onNodeWithText("Plank").performClick()
         composeTestRule.onNodeWithText("Sem descanso").assertExists()
     }
 

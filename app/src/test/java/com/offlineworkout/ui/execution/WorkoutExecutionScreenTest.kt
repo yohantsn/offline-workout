@@ -286,25 +286,46 @@ class WorkoutExecutionScreenTest {
     }
 
     @Test
-    fun three_types_render_with_units() {
+    fun series_type_renders_sets_fields_rest_and_cta() {
         idleScreen(ready())
-        composeTestRule.onNodeWithText("Squat").assertExists()
+        // Título + chip da strip: o nome aparece nos dois.
+        composeTestRule.onAllNodesWithText("Squat").assertCountEquals(2)
         composeTestRule.onAllNodesWithText("Repetições (reps)", substring = true).assertCountEquals(2)
         composeTestRule.onAllNodesWithText("Peso (kg, opcional)", substring = true).assertCountEquals(2)
         composeTestRule.onNodeWithText("Descanso: 60 s", substring = true).assertExists()
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(3)
+        composeTestRule.onNodeWithText("Concluir série 1").assertExists()
+        composeTestRule.onNodeWithContentDescription("Exercício 1 de 3").assertExists()
+    }
+
+    @Test
+    fun timed_type_renders_only_duration() {
+        idleScreen(ready(selected = 2L))
         composeTestRule.onNodeWithText("Duração realizada (s)").assertExists()
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(4)
+        composeTestRule.onAllNodesWithText("Repetições (reps)", substring = true).assertCountEquals(0)
+        composeTestRule.onNodeWithText("Concluir exercício").assertExists()
+    }
+
+    @Test
+    fun distance_type_renders_distance_duration_and_no_rest() {
+        idleScreen(ready(selected = 3L))
         composeTestRule.onNodeWithText("Distância (m)").assertExists()
         composeTestRule.onNodeWithText("Duração (s)").assertExists()
         composeTestRule.onNodeWithText("Sem descanso").assertExists()
     }
 
     @Test
+    fun strip_selects_exercise() {
+        val calls = Calls()
+        idleScreen(ready(), calls)
+        composeTestRule.onNodeWithText("Plank").performClick()
+        composeTestRule.runOnIdle { assertEquals(listOf(2L), calls.selected) }
+    }
+
+    @Test
     fun series_completion_dispatches_callback() {
         val calls = Calls()
         idleScreen(ready(), calls)
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(2)
+        // CTA fixo no rodapé: sem rolagem até ele.
         composeTestRule.onNodeWithContentDescription("Concluir série 1 de Squat").assertIsEnabled()
         composeTestRule.onNodeWithContentDescription("Concluir série 1 de Squat").performClick()
         composeTestRule.runOnIdle { assertEquals(listOf(1L to 1), calls.completedSets) }
@@ -317,7 +338,8 @@ class WorkoutExecutionScreenTest {
             seriesSets = listOf(SeriesSetInputState(1, "10", "60", 123L))
         )
         idleScreen(ready(exercises = listOf(done)))
-        composeTestRule.onNodeWithText("Série 1: 10 reps • 60 kg").assertExists()
+        // Modo performance: série concluída colapsa para uma linha.
+        composeTestRule.onNodeWithText("✓ 10 reps · 60 kg").assertExists()
         composeTestRule.onNodeWithText("Concluído").assertExists()
     }
 
@@ -325,8 +347,10 @@ class WorkoutExecutionScreenTest {
     fun reps_input_dispatches() {
         val calls = Calls()
         idleScreen(ready(), calls)
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(2)
-        composeTestRule.onAllNodesWithText("Repetições (reps)", substring = true)[0].performTextReplacement("12")
+        // O NumericField vazio mostra "—" (placeholder fundido ao campo).
+        // "—" existentes: série 1 kg, série 2 reps, série 2 kg (série 1 reps
+        // tem "10"). Índice 1 = reps da série 2.
+        composeTestRule.onAllNodesWithText("—")[1].performTextReplacement("12")
         composeTestRule.runOnIdle { assertTrue(calls.repsInputs.contains("12")) }
     }
 
@@ -334,7 +358,7 @@ class WorkoutExecutionScreenTest {
     fun pager_selects_exercises() {
         val calls = Calls()
         idleScreen(ready(), calls)
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(5)
+        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(2)
         composeTestRule.onNodeWithText("Próximo").performClick()
         composeTestRule.onNodeWithText("Anterior").performClick()
         composeTestRule.runOnIdle { assertEquals(listOf(-1L, -2L), calls.selected) }
@@ -344,16 +368,25 @@ class WorkoutExecutionScreenTest {
     fun running_rest_banner_with_cancel() {
         val calls = Calls()
         idleScreen(ready(timer = runningSnapshot()), calls)
-        composeTestRule.onNodeWithText("Restam 45s").assertExists()
-        composeTestRule.onNodeWithContentDescription("Cancelar descanso em andamento").performClick()
+        composeTestRule.onNodeWithText("0:45").assertExists()
+        composeTestRule.onNodeWithText("Cancelar").performClick()
         composeTestRule.runOnIdle { assertEquals(1, calls.cancels) }
+    }
+
+    @Test
+    fun running_rest_replaces_complete_cta() {
+        idleScreen(ready(timer = runningSnapshot()))
+        // Durante o descanso, o descanso É a ação (R-23 por eliminação).
+        composeTestRule.onAllNodesWithText("Concluir série", substring = true).assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Concluir exercício").assertCountEquals(0)
+        composeTestRule.onNodeWithText("0:45").assertExists()
     }
 
     @Test
     fun current_exercise_opens_history() {
         val calls = Calls()
         idleScreen(ready(), calls)
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(2)
+        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(1)
         composeTestRule.onNodeWithContentDescription("Ver histórico de Squat").performClick()
         composeTestRule.runOnIdle { assertEquals(1, calls.historyOpened) }
     }
@@ -527,8 +560,8 @@ class WorkoutExecutionScreenTest {
     fun completed_and_current_indicators() {
         val done = exerciseState(seriesSpec(1L, "Squat", 0)).copy(isCompleted = true)
         idleScreen(ready(exercises = listOf(done, exerciseState(timedSpec(2L))), selected = 2L))
-        composeTestRule.onNodeWithText("Concluído").assertExists()
-        composeTestRule.onNodeWithTag("executionList").performScrollToIndex(3)
+        // Concluído não atual: chip da strip com ✓ + dot de sucesso.
+        composeTestRule.onNodeWithText("Squat ✓").assertExists()
         composeTestRule.onNodeWithContentDescription("Exercício atual: Plank").assertExists()
     }
 }
