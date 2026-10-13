@@ -6,6 +6,7 @@ import com.offlineworkout.ui.MissingRecord
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -155,9 +157,14 @@ fun WorkoutExecutionScreen(
                         )
                         // T9.3 (bloqueio 6): desabilitado em sessão estrangeira
                         // (nunca some — some esconderia a saída do treino).
-                        Button(
+                        // E-2: contornado primary, nunca terceiro preenchido —
+                        // o CTA "Concluir série" é a única ação dominante.
+                        OutlinedButton(
                             onClick = { showFinishConfirm = true },
                             enabled = !foreignSession && ready.exercises.isNotEmpty(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
@@ -520,6 +527,9 @@ private fun ReadyContent(
                     .weight(1f)
                     .fillMaxWidth()
                     .testTag("executionList"),
+                // E-4: folga inferior para a barra fixa — sem ela o último
+                // item nasce cortado pela bottomBar.
+                contentPadding = PaddingValues(bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item(key = "strip") {

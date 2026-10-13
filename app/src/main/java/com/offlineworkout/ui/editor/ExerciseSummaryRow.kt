@@ -24,13 +24,16 @@ import com.offlineworkout.ui.components.TypeBadgeTone
 
 // Linha-resumo do exercício colapsado: o card inteiro expande (onExpand); os
 // botões de mover são clicáveis filhos e param a propagação. 48 dp nos dois
-// eixos (R-19). O movimento mora aqui — o ExerciseEditor recebe os params por
-// contrato mas não os duplica, para não haver duas ações iguais visíveis.
+// eixos (R-19). `expanded` (default false, retrocompatível) alterna o chevron
+// ▾/▴ — pista visual de que o card expande (ED-2), sem biblioteca de ícones.
+// O movimento mora aqui — o ExerciseEditor recebe os params por contrato mas
+// não os duplica, para não haver duas ações iguais visíveis.
 @Composable
 fun ExerciseSummaryRow(
     name: String,
     summary: String,
     tone: TypeBadgeTone,
+    expanded: Boolean,
     onExpand: () -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
@@ -93,6 +96,11 @@ fun ExerciseSummaryRow(
                     TypeBadgeTone.Time -> stringResource(R.string.editor_type_timed)
                     TypeBadgeTone.DistanceTime -> stringResource(R.string.editor_type_distance)
                 }
+            )
+            Text(
+                text = if (expanded) "▴" else "▾",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -102,8 +102,10 @@ class WorkoutEditorScreenTest {
         composeTestRule.onNodeWithText("Novo treino").assertExists()
         composeTestRule.onNodeWithText("Código").assertExists()
         composeTestRule.onNodeWithText("Adicionar exercício").assertExists()
+        // ED-1: "Cancelar" redundante com "Voltar" saiu da barra (o voltar
+        // segue o fluxo de descarte). Só Salvar como ação.
         composeTestRule.onNodeWithText("Salvar").assertExists()
-        composeTestRule.onNodeWithText("Cancelar").assertExists()
+        composeTestRule.onAllNodesWithText("Cancelar").assertCountEquals(0)
     }
 
     @Test

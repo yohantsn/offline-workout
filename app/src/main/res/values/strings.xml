@@ -120,11 +120,14 @@
     <string name="history_load_more">Carregar mais</string>
     <string name="history_loading">Carregando…</string>
     <string name="history_exercise_cd">Ver histórico de %1$s</string>
+    <string name="history_set_line">Série %1$d: %2$d reps • %3$s</string>
+    <string name="history_no_weight">sem peso</string>
+    <string name="history_duration_line">Duração: %1$s s</string>
+    <string name="history_distance_line">Distância: %1$s m</string>
     <!-- Lote 6 (redesign): editor -->
     <string name="editor_new">Novo treino</string>
     <string name="editor_edit">Editar treino</string>
     <string name="editor_save">Salvar</string>
-    <string name="editor_cancel">Cancelar</string>
     <string name="editor_add">Adicionar exercício</string>
     <string name="editor_close">Fechar</string>
     <string name="editor_code">Código</string>

@@ -308,9 +308,29 @@ class WorkoutHistoryScreenTest {
     }
 
     @Test
+    fun chart_card_shows_title_and_period_subtitle() {
+        // H-5: gráfico com dados — título por tipo + período + contagem.
+        idleScreen(ready())
+        composeTestRule.onNodeWithText("Evolução da carga").assertExists()
+        val period = "${formatHistoryDate(1000L)} – ${formatHistoryDate(2000L)}"
+        composeTestRule.onNodeWithText("$period · kg · 2 pontos").assertExists()
+    }
+
+    @Test
     fun empty_history_message() {
         idleScreen(ready(rows = emptyList(), chartData = null, statsData = HistoryStats(1L, 0, null, null)))
         composeTestRule.onNodeWithText("Sem execuções para este exercício").assertExists()
+    }
+
+    @Test
+    fun set_without_weight_never_prints_null() {
+        // H-1: peso opcional — "sem peso", nunca a palavra "null".
+        val noWeight = execution(10L, 2000L).copy(
+            sets = listOf(ExecutionSetView(1, 8, null))
+        )
+        idleScreen(ready(rows = listOf(noWeight), chartData = null))
+        composeTestRule.onNodeWithText("Série 1: 8 reps • sem peso").assertExists()
+        composeTestRule.onAllNodesWithText("null", substring = true).assertCountEquals(0)
     }
 
     @Test

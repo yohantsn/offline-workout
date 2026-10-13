@@ -79,17 +79,12 @@ fun WorkoutEditorScreen(
         modifier = modifier,
         topBar = {
             if (form != null) {
+                // "Cancelar" redundante com "Voltar" removido (ED-1): o voltar
+                // segue o fluxo de descarte (onCancel confirma se dirty).
                 AppTopBar(
                     title = form.mode.title(),
-                    onBack = onBack,
+                    onBack = onCancel,
                     actions = {
-                        TextButton(
-                            onClick = onCancel,
-                            enabled = !saving,
-                            modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
-                        ) {
-                            Text(text = stringResource(R.string.editor_cancel))
-                        }
                         TextButton(
                             onClick = onSave,
                             enabled = !saving,
@@ -335,6 +330,7 @@ private fun EditorForm(
                         ExerciseType.TIMED -> TypeBadgeTone.Time
                         ExerciseType.DISTANCE_TIME -> TypeBadgeTone.DistanceTime
                     },
+                    expanded = isExpanded,
                     onExpand = {
                         expandedId = if (expandedId == exercise.clientId) null else exercise.clientId
                     },

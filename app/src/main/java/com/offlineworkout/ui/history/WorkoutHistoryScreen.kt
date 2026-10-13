@@ -575,16 +575,28 @@ private fun HistoryRow(row: ExerciseExecutionView) {
             )
             if (row.sets.isNotEmpty()) {
                 row.sets.forEach { set ->
+                    // H-1: peso é opcional — nunca interpolar o Double? direto.
+                    val weight = set.weightKg?.let { "$it kg" }
+                        ?: stringResource(R.string.history_no_weight)
                     Text(
-                        text = "Série ${set.setNumber}: ${set.reps} reps • ${set.weightKg} kg",
+                        text = stringResource(
+                            R.string.history_set_line,
+                            set.setNumber,
+                            set.reps,
+                            weight
+                        ),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
             } else if (row.durationSeconds != null || row.distanceMeters != null) {
                 Text(
                     text = listOfNotNull(
-                        row.durationSeconds?.let { "Duração: $it s" },
-                        row.distanceMeters?.let { "Distância: $it m" }
+                        row.durationSeconds?.let {
+                            stringResource(R.string.history_duration_line, it.toString())
+                        },
+                        row.distanceMeters?.let {
+                            stringResource(R.string.history_distance_line, it.toString())
+                        }
                     ).joinToString(" • "),
                     style = MaterialTheme.typography.bodyMedium
                 )

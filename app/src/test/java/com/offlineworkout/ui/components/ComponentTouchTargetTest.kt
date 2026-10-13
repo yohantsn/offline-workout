@@ -3,6 +3,8 @@ package com.offlineworkout.ui.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -202,6 +204,33 @@ class ComponentTouchTargetTest {
                 heightDp >= 144.dp
             )
         }
+    }
+
+    @Test
+    fun appTopBar_long_title_does_not_overlap_back_action() {
+        // ED-1/E-3: título com peso + ellipsis degrada em vez de colidir.
+        val title = "T".repeat(200)
+        composeTestRule.setContent {
+            OfflineWorkoutTheme {
+                AppTopBar(
+                    title = title,
+                    onBack = {},
+                    actions = {
+                        TextButton(onClick = {}) { Text("Salvar") }
+                    }
+                )
+            }
+        }
+        val titleBounds = composeTestRule.onNodeWithText(title).fetchSemanticsNode().boundsInRoot
+        val backBounds = composeTestRule.onNodeWithText("Voltar").fetchSemanticsNode().boundsInRoot
+        val overlaps = titleBounds.left < backBounds.right &&
+            titleBounds.right > backBounds.left &&
+            titleBounds.top < backBounds.bottom &&
+            titleBounds.bottom > backBounds.top
+        assertTrue(
+            "title $titleBounds overlaps back $backBounds",
+            !overlaps
+        )
     }
 
     @Test
