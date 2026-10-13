@@ -59,6 +59,33 @@ class RoomWorkoutRepositoryTest {
     }
 
     @Test
+    fun observe_workouts_aggregates_counts_and_rest() = runTest {
+        val id = repo.createWorkout(WorkoutDraft("A", "A")).getOrThrow()
+        repo.createWorkout(WorkoutDraft("B", "B")).getOrThrow()
+        repo.createExercise(seriesInput(id, position = 0).copy(restSeconds = 90)).getOrThrow()
+        repo.createExercise(seriesInput(id, position = 1).copy(restSeconds = 30)).getOrThrow()
+
+        val summaries = repo.observeWorkouts().first()
+        val withExercises = summaries.single { it.code == "A" }
+        assertEquals(2, withExercises.exerciseCount)
+        assertEquals(120, withExercises.totalRestSeconds)
+        val empty = summaries.single { it.code == "B" }
+        assertEquals(0, empty.exerciseCount)
+        assertEquals(0, empty.totalRestSeconds)
+    }
+
+    @Test
+    fun observe_workout_maps_aggregates_and_null_for_missing() = runTest {
+        val id = repo.createWorkout(WorkoutDraft("A", "A")).getOrThrow()
+        repo.createExercise(seriesInput(id)).getOrThrow()
+
+        val summary = repo.observeWorkout(id).first()
+        assertEquals(1, summary?.exerciseCount)
+        assertEquals(90, summary?.totalRestSeconds)
+        assertNull(repo.observeWorkout(999L).first())
+    }
+
+    @Test
     fun blank_code_is_validation_failure() = runTest {
         // T9.2 (D-1): `code` is free text, so the rejected case is emptiness.
         val failure = repo.createWorkout(WorkoutDraft("  ", "X")).exceptionOrNull()

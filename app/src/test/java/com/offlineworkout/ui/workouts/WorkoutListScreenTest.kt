@@ -154,6 +154,28 @@ class WorkoutListScreenTest {
     }
 
     @Test
+    fun success_shows_exercise_count_and_rest_minutes() {
+        idleScreen(
+            WorkoutListUiState.Success(
+                listOf(
+                    WorkoutSummary(1L, "A", "Alpha", 1L, exerciseCount = 2, totalRestSeconds = 90)
+                )
+            )
+        )
+        composeTestRule.onNodeWithText("2 exercícios · 1 min de descanso").assertExists()
+    }
+
+    @Test
+    fun zero_rest_shows_no_rest_instead_of_zero() {
+        idleScreen(
+            WorkoutListUiState.Success(
+                listOf(WorkoutSummary(1L, "A", "Alpha", 1L))
+            )
+        )
+        composeTestRule.onNodeWithText("sem descanso", substring = true).assertExists()
+    }
+
+    @Test
     fun secondary_action_does_not_trigger_execution() {
         val executed = mutableListOf<Long>()
         val edited = mutableListOf<Long>()

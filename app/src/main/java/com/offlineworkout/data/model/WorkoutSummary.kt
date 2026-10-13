@@ -5,5 +5,7 @@ data class WorkoutSummary(
     val id: Long,
     val code: String,
     val name: String,
-    val createdAt: Long
+    val createdAt: Long,
+    val exerciseCount: Int = 0,
+    val totalRestSeconds: Int = 0
 )

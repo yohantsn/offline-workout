@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -40,6 +41,15 @@ fun WorkoutCard(
     val executeDescription = stringResource(R.string.list_execute_cd, name)
     val editDescription = stringResource(R.string.list_edit_cd, name)
     val historyDescription = stringResource(R.string.list_history_cd, name)
+    val metaLine = stringResource(
+        R.string.list_card_meta,
+        pluralStringResource(R.plurals.list_exercise_count, exerciseCount, exerciseCount),
+        when {
+            totalRestSeconds >= 60 -> stringResource(R.string.list_rest_min, totalRestSeconds / 60)
+            totalRestSeconds > 0 -> stringResource(R.string.list_rest_seconds, totalRestSeconds)
+            else -> stringResource(R.string.list_rest_none)
+        }
+    )
     Card(
         onClick = onCardClick,
         modifier = modifier.semantics {
@@ -63,6 +73,12 @@ fun WorkoutCard(
                     CodeChip(code = code)
                 }
             }
+            Text(
+                text = metaLine,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(top = 12.dp)

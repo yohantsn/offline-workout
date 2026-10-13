@@ -163,12 +163,10 @@ private fun WorkoutCards(
             .semantics { contentDescription = listDescription }
     ) {
         items(workouts, key = { it.id }) { workout ->
-            // exerciseCount/totalRestSeconds ainda não existem no repositório
-            // (proibido neste lote): contrato recebido, exibição pendente.
             WorkoutCard(
                 name = workout.name,
-                exerciseCount = 0,
-                totalRestSeconds = 0,
+                exerciseCount = workout.exerciseCount,
+                totalRestSeconds = workout.totalRestSeconds,
                 code = workout.code,
                 onCardClick = { onExecutionSelected(workout.id) },
                 onEditClick = { onEditSelected(workout.id) },

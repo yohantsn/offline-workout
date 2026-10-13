@@ -32,6 +32,29 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE id = :id")
     fun observeById(id: Long): Flow<WorkoutEntity?>
 
+    // Redesign (lista): agregação somente leitura — nenhuma entidade, índice
+    // ou coluna nova. Treino sem exercício agrega 0/0 via LEFT JOIN + COALESCE.
+    @Query("""
+      SELECT w.id, w.code, w.name, w.createdAt,
+             COUNT(e.id) AS exerciseCount,
+             COALESCE(SUM(e.restSeconds), 0) AS totalRestSeconds
+      FROM workouts w
+      LEFT JOIN exercises e ON e.workoutId = w.id
+      GROUP BY w.id, w.code, w.name, w.createdAt
+    """)
+    fun observeAllAggregated(): Flow<List<WorkoutAggregateRow>>
+
+    @Query("""
+      SELECT w.id, w.code, w.name, w.createdAt,
+             COUNT(e.id) AS exerciseCount,
+             COALESCE(SUM(e.restSeconds), 0) AS totalRestSeconds
+      FROM workouts w
+      LEFT JOIN exercises e ON e.workoutId = w.id
+      WHERE w.id = :id
+      GROUP BY w.id, w.code, w.name, w.createdAt
+    """)
+    fun observeByIdAggregated(id: Long): Flow<WorkoutAggregateRow?>
+
     @Query("SELECT * FROM exercises WHERE workoutId = :workoutId ORDER BY position ASC")
     fun observeExercises(workoutId: Long): Flow<List<ExerciseEntity>>
 

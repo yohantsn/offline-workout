@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteException
 import androidx.room.withTransaction
 import com.offlineworkout.data.local.AppDatabase
 import com.offlineworkout.data.local.ExerciseEntity
+import com.offlineworkout.data.local.WorkoutAggregateRow
 import com.offlineworkout.data.local.WorkoutEntity
 import com.offlineworkout.data.model.ExerciseAggregateDraft
 import com.offlineworkout.data.model.ExerciseInput
@@ -32,12 +33,12 @@ class RoomWorkoutRepository(
     // accent-sensitive: "Costas" sorts before "peito". Accepted behaviour, not
     // locale collation — see the test that documents it and the README.
     override fun observeWorkouts(): Flow<List<WorkoutSummary>> =
-        db.workoutDao().observeAll()
+        db.workoutDao().observeAllAggregated()
             .map { list -> list.map { it.toSummary() }.sortedBy { it.code } }
             .asRepositoryFlow()
 
     override fun observeWorkout(id: Long): Flow<WorkoutSummary?> =
-        db.workoutDao().observeById(id).map { it?.toSummary() }.asRepositoryFlow()
+        db.workoutDao().observeByIdAggregated(id).map { it?.toSummary() }.asRepositoryFlow()
 
     override fun observeExercises(workoutId: Long): Flow<List<ExerciseSpec>> =
         db.workoutDao().observeExercises(workoutId).map { list -> list.map { it.toSpec() } }.asRepositoryFlow()
@@ -342,6 +343,15 @@ class RoomWorkoutRepository(
 
 // Single mapping rule per type, shared by the implementation and unit-tested directly.
 internal fun WorkoutEntity.toSummary() = WorkoutSummary(id = id, code = code, name = name, createdAt = createdAt)
+
+internal fun WorkoutAggregateRow.toSummary() = WorkoutSummary(
+    id = id,
+    code = code,
+    name = name,
+    createdAt = createdAt,
+    exerciseCount = exerciseCount,
+    totalRestSeconds = totalRestSeconds
+)
 
 internal fun ExerciseEntity.toSpec() = ExerciseSpec(
     id = id,

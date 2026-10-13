@@ -4,6 +4,7 @@ import com.offlineworkout.data.local.ExerciseEntity
 import com.offlineworkout.data.local.ExerciseExecutionEntity
 import com.offlineworkout.data.local.ExerciseExecutionWithSets
 import com.offlineworkout.data.local.ExecutionSetEntity
+import com.offlineworkout.data.local.WorkoutAggregateRow
 import com.offlineworkout.data.local.WorkoutEntity
 import com.offlineworkout.data.model.ExerciseType
 import org.junit.Assert.assertEquals
@@ -21,6 +22,17 @@ class MappingTest {
         assertEquals("B", summary.code)
         assertEquals("Treino B", summary.name)
         assertEquals(123L, summary.createdAt)
+    }
+
+    @Test
+    fun workout_aggregate_row_maps_to_summary_with_counts() {
+        val summary = WorkoutAggregateRow(
+            id = 7L, code = "B", name = "Treino B", createdAt = 123L,
+            exerciseCount = 4, totalRestSeconds = 1920
+        ).toSummary()
+        assertEquals(7L, summary.id)
+        assertEquals(4, summary.exerciseCount)
+        assertEquals(1920, summary.totalRestSeconds)
     }
 
     @Test

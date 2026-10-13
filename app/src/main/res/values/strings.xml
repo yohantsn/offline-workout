@@ -25,6 +25,14 @@
     <string name="list_empty_text">Crie seu primeiro treino para começar a registrar séries.</string>
     <string name="list_error">Não foi possível carregar os treinos.</string>
     <string name="list_retry">Tentar novamente</string>
+    <string name="list_card_meta">%1$s · %2$s</string>
+    <string name="list_rest_min">%d min de descanso</string>
+    <string name="list_rest_seconds">%d s de descanso</string>
+    <string name="list_rest_none">sem descanso</string>
+    <plurals name="list_exercise_count">
+        <item quantity="one">%d exercício</item>
+        <item quantity="other">%d exercícios</item>
+    </plurals>
     <!-- Lote 4 (redesign): backup -->
     <string name="backup_title">Backup</string>
     <string name="backup_export_title">Exportar seus dados</string>
