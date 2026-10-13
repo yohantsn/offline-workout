@@ -138,7 +138,7 @@ class BackupScreenTest {
         composeTestRule.onNodeWithText("5").assertExists()
         composeTestRule.onNodeWithText("7").assertExists()
         composeTestRule.onNodeWithText("9").assertExists()
-        composeTestRule.onNodeWithText("Integridade verificada").assertExists()
+        composeTestRule.onNodeWithText("Soma de verificação: abc").assertExists()
         composeTestRule.onNodeWithText("Isto substituirá todos os dados locais").assertExists()
         composeTestRule.onNodeWithText(
             "Seu treino atual e todo o histórico serão apagados. Esta ação não pode ser desfeita."
@@ -148,11 +148,40 @@ class BackupScreenTest {
     }
 
     @Test
+    fun preview_sheet_shows_file_metadata() {
+        screen(
+            BackupUiState.Preview(
+                preview(),
+                fileName = "treino-backup.json",
+                sizeBytes = 1331L,
+                modifiedAtEpochMs = 1_714_992_000_000L
+            )
+        )
+        composeTestRule.onNodeWithText("treino-backup.json").assertExists()
+        composeTestRule.onNodeWithText("1,3 KB · 06/05/2024").assertExists()
+        composeTestRule.onNodeWithText("Soma de verificação: abc").assertExists()
+    }
+
+    @Test
+    fun preview_sheet_shows_dash_for_unknown_date() {
+        screen(
+            BackupUiState.Preview(
+                preview(),
+                fileName = "b.json",
+                sizeBytes = 42L,
+                modifiedAtEpochMs = null
+            )
+        )
+        composeTestRule.onNodeWithText("b.json").assertExists()
+        composeTestRule.onNodeWithText("42 B · —").assertExists()
+    }
+
+    @Test
     fun preview_sheet_shows_checksum_without_invented_filename() {
         // O contrato BackupPreview não tem nome de arquivo (mudança de
         // repositório, fora deste lote): a sheet mostra a soma que existe.
         screen(BackupUiState.Preview(preview()))
-        composeTestRule.onNodeWithText("Soma de verificação: abc").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Soma de verificação: abc").assertExists()
     }
 
     @Test

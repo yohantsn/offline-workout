@@ -44,7 +44,8 @@
     <string name="backup_system_off">O backup do sistema está desligado — só sai deste aparelho por aqui.</string>
     <string name="backup_preview_title">Prévia da importação</string>
     <string name="backup_checksum_label">Soma de verificação: %1$s</string>
-    <string name="backup_integrity">Integridade verificada</string>
+    <string name="backup_file_meta">%1$s · %2$s</string>
+    <string name="backup_date_unknown">—</string>
     <string name="backup_count_workouts">treinos</string>
     <string name="backup_count_exercises">exercícios</string>
     <string name="backup_count_sessions">sessões</string>

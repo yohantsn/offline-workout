@@ -132,6 +132,9 @@ fun BackupScreen(
             if (state is BackupUiState.Preview) {
                 PreviewSheet(
                     preview = state.preview,
+                    fileName = state.fileName,
+                    sizeBytes = state.sizeBytes,
+                    modifiedAtEpochMs = state.modifiedAtEpochMs,
                     onConfirmReplace = onConfirmReplace,
                     onCancelPreview = onCancelPreview
                 )
@@ -215,10 +218,15 @@ private fun ExportImportCards(onExport: () -> Unit, onImport: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 private fun PreviewSheet(
     preview: BackupPreview,
+    fileName: String,
+    sizeBytes: Long,
+    modifiedAtEpochMs: Long?,
     onConfirmReplace: () -> Unit,
     onCancelPreview: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
+    val dateText = modifiedAtEpochMs?.let { formatBackupDate(it) }
+        ?: stringResource(R.string.backup_date_unknown)
     ModalBottomSheet(
         onDismissRequest = onCancelPreview,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -239,15 +247,27 @@ private fun PreviewSheet(
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
-                        text = stringResource(R.string.backup_checksum_label, preview.checksum),
+                        text = fileName,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = scheme.onSurface
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.backup_file_meta,
+                            formatBytes(sizeBytes),
+                            dateText
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = scheme.onSurfaceVariant
                     )
                     Text(
-                        text = stringResource(R.string.backup_integrity),
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = stringResource(R.string.backup_checksum_label, preview.checksum),
+                        style = MaterialTheme.typography.labelSmall,
                         color = scheme.onSurfaceVariant
                     )
                 }
@@ -464,6 +484,25 @@ private fun WorkingBlock(operation: BackupOperation) {
             )
         }
     }
+}
+
+// Redesign (prévia): tamanho legível com locale explícito (o app é pt-BR;
+// nunca depende do locale do aparelho para não variar entre testes e uso).
+private fun formatBytes(bytes: Long): String {
+    if (bytes < 0) return "—"
+    if (bytes < 1024) return "$bytes B"
+    val locale = java.util.Locale.forLanguageTag("pt-BR")
+    if (bytes < 1024 * 1024) {
+        return String.format(locale, "%.1f KB", bytes / 1024.0)
+    }
+    return String.format(locale, "%.1f MB", bytes / (1024.0 * 1024.0))
+}
+
+// Redesign (prévia): data curta determinística (UTC, sem locale).
+private fun formatBackupDate(epochMs: Long): String {
+    val format = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.ROOT)
+    format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+    return format.format(java.util.Date(epochMs))
 }
 
 @Composable

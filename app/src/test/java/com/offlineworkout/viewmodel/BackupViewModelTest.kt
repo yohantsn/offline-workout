@@ -2,6 +2,7 @@ package com.offlineworkout.viewmodel
 
 import com.offlineworkout.data.backup.BackupDocumentTooLargeException
 import com.offlineworkout.data.backup.BackupFileGateway
+import com.offlineworkout.data.backup.BackupFileInfo
 import com.offlineworkout.data.backup.MAX_BACKUP_BYTES
 import com.offlineworkout.data.repository.BackupDocument
 import com.offlineworkout.data.repository.BackupFailure
@@ -233,6 +234,44 @@ class BackupViewModelTest {
     }
 
     @Test
+    fun preview_carries_file_metadata() = runTest {
+        setTestMain()
+        val repo = FakeBackupRepository(previewResult = Result.success(preview()))
+        val vm = BackupViewModel(
+            repo,
+            FakeGateway(
+                readResult = Result.success(byteArrayOf(1, 2, 3)),
+                describeResult = Result.success(
+                    BackupFileInfo("treino-backup.json", 1331L, 1_714_953_600_000L)
+                )
+            )
+        )
+        vm.onImportSelected("content://doc/9")
+        val previewState = vm.state.first { it is BackupUiState.Preview } as BackupUiState.Preview
+        assertEquals("treino-backup.json", previewState.fileName)
+        assertEquals(1331L, previewState.sizeBytes)
+        assertEquals(1_714_953_600_000L, previewState.modifiedAtEpochMs)
+    }
+
+    @Test
+    fun describe_failure_falls_back_to_generic_metadata() = runTest {
+        setTestMain()
+        val repo = FakeBackupRepository(previewResult = Result.success(preview()))
+        val vm = BackupViewModel(
+            repo,
+            FakeGateway(
+                readResult = Result.success(byteArrayOf(1, 2, 3)),
+                describeResult = Result.failure(IllegalStateException("no provider"))
+            )
+        )
+        vm.onImportSelected("content://doc/9")
+        val previewState = vm.state.first { it is BackupUiState.Preview } as BackupUiState.Preview
+        assertEquals("backup.json", previewState.fileName)
+        assertEquals(3L, previewState.sizeBytes)
+        assertNull(previewState.modifiedAtEpochMs)
+    }
+
+    @Test
     fun cancel_preview_writes_nothing() = runTest {
         setTestMain()
         val repo = FakeBackupRepository(previewResult = Result.success(preview()))
@@ -306,7 +345,8 @@ class BackupViewModelTest {
     private class FakeGateway(
         var readResult: Result<ByteArray>? = null,
         var shareResult: Result<Unit>? = null,
-        var shareGate: kotlinx.coroutines.CompletableDeferred<Result<Unit>>? = null
+        var shareGate: kotlinx.coroutines.CompletableDeferred<Result<Unit>>? = null,
+        var describeResult: Result<BackupFileInfo>? = null
     ) : BackupFileGateway {
         val writes = mutableListOf<Pair<String, ByteArray>>()
         var clearCalls = 0
@@ -336,6 +376,10 @@ class BackupViewModelTest {
         override suspend fun purgeExpiredStagedCache(): Result<Unit> {
             purgeCalls += 1
             return Result.success(Unit)
+        }
+
+        override suspend fun describe(uriString: String): Result<BackupFileInfo> {
+            return describeResult ?: Result.success(BackupFileInfo("doc.json", 0L, null))
         }
     }
 }

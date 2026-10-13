@@ -3,6 +3,8 @@ package com.offlineworkout.data.backup
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -85,6 +87,43 @@ class AndroidBackupFileGateway(
         withContext(Dispatchers.IO) { clearStagedCacheBlocking() }
     }
 
+    // Redesign (prévia): DISPLAY_NAME/SIZE via OpenableColumns; data via
+    // DocumentsContract.COLUMN_LAST_MODIFIED quando o provedor expõe (SAF
+    // expõe, provedores genéricos podem omitir → null, nunca inventado).
+    override suspend fun describe(uriString: String): Result<BackupFileInfo> = runGateway {
+        withContext(Dispatchers.IO) {
+            val uri = Uri.parse(uriString) ?: throw IOException("invalid source")
+            val resolver = appContext.contentResolver
+            val cursor = resolver.query(uri, null, null, null, null)
+                ?: throw IOException("cannot describe source")
+            cursor.use {
+                if (!it.moveToFirst()) throw IOException("empty metadata")
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
+                val modifiedIndex = it.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED)
+                val fileName = (if (nameIndex >= 0) it.getString(nameIndex) else null)
+                    ?: uri.lastPathSegment
+                    ?: GENERIC_BACKUP_FILE_NAME
+                val sizeBytes = if (sizeIndex >= 0 && !it.isNull(sizeIndex)) {
+                    it.getLong(sizeIndex)
+                } else {
+                    probeSizeBytes(resolver, uri)
+                }
+                val modifiedAtEpochMs = if (modifiedIndex >= 0 && !it.isNull(modifiedIndex)) {
+                    it.getLong(modifiedIndex)
+                } else {
+                    null
+                }
+                BackupFileInfo(fileName, sizeBytes, modifiedAtEpochMs)
+            }
+        }
+    }
+
+    private fun probeSizeBytes(resolver: android.content.ContentResolver, uri: Uri): Long =
+        runCatching {
+            resolver.openAssetFileDescriptor(uri, "r")?.use { it.length } ?: -1L
+        }.getOrDefault(-1L)
+
     /**
      * Startup variant. The composition root calls this once when the process
      * container is created: it only unlinks a handful of small files in the
@@ -159,5 +198,9 @@ class AndroidBackupFileGateway(
         // needed until the receiving app has copied it; one hour is far beyond
         // any foreground share and bounds the cache to a single small file.
         const val STAGED_FILE_MAX_AGE_MS = 60L * 60L * 1000L
+
+        // Redesign (prévia): último recurso quando o provedor não informa
+        // nome algum para o documento.
+        const val GENERIC_BACKUP_FILE_NAME = "backup.json"
     }
 }

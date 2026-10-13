@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.offlineworkout.data.backup.BackupDocumentTooLargeException
 import com.offlineworkout.data.backup.BackupFileGateway
+import com.offlineworkout.data.backup.BackupFileInfo
 import com.offlineworkout.data.repository.BackupDocument
 import com.offlineworkout.data.repository.BackupFailure
 import com.offlineworkout.data.repository.BackupImportResult
@@ -24,7 +25,12 @@ import kotlinx.coroutines.launch
 sealed interface BackupUiState {
     data object Idle : BackupUiState
     data class Working(val operation: BackupOperation) : BackupUiState
-    data class Preview(val preview: BackupPreview) : BackupUiState
+    data class Preview(
+        val preview: BackupPreview,
+        val fileName: String = "",
+        val sizeBytes: Long = 0L,
+        val modifiedAtEpochMs: Long? = null
+    ) : BackupUiState
     data class Success(val result: BackupUiResult) : BackupUiState
 
     // T8.3: recovery is explicit. T8.1 spec:263 splits file errors
@@ -50,6 +56,10 @@ sealed interface BackupUiState {
 enum class BackupRecovery { RETRY, PICK_ANOTHER_FILE }
 
 enum class BackupOperation { EXPORT, SHARE, IMPORT }
+
+// Redesign (prévia): fallback quando describe falha — nome genérico,
+// tamanho dos bytes lidos, data desconhecida.
+private const val GENERIC_IMPORT_FILE_NAME = "backup.json"
 
 data class BackupUiResult(
     val operation: BackupOperation,
@@ -190,9 +200,21 @@ class BackupViewModel(
                 }
                 return@launch
             }
-            previewBytes(bytes, generation)
+            previewBytes(bytes, generation, fileInfo(uriString, bytes))
         }
     }
+
+    // Redesign (prévia): metadados tolerantes a falha — describe quebrado cai
+    // para nome genérico + tamanho lido + data desconhecida. preview(bytes)
+    // continua puro e inalterado.
+    private suspend fun fileInfo(uriString: String, bytes: ByteArray): BackupFileInfo =
+        fileGateway.describe(uriString).getOrElse {
+            BackupFileInfo(
+                fileName = GENERIC_IMPORT_FILE_NAME,
+                sizeBytes = bytes.size.toLong(),
+                modifiedAtEpochMs = null
+            )
+        }
 
     fun onConfirmReplaceAll() {
         val bytes = pendingImportBytes ?: return
@@ -253,13 +275,18 @@ class BackupViewModel(
         stateFlow.value = BackupUiState.Idle
     }
 
-    private fun previewBytes(bytes: ByteArray, generation: Int) {
+    private fun previewBytes(bytes: ByteArray, generation: Int, info: BackupFileInfo) {
         viewModelScope.launch {
             val result = repository.preview(bytes)
             if (generation != operationGeneration) return@launch
             result.onSuccess { preview ->
                 pendingImportBytes = bytes
-                stateFlow.value = BackupUiState.Preview(preview)
+                stateFlow.value = BackupUiState.Preview(
+                    preview = preview,
+                    fileName = info.fileName,
+                    sizeBytes = info.sizeBytes,
+                    modifiedAtEpochMs = info.modifiedAtEpochMs
+                )
             }.onFailure { e ->
                 if (e is CancellationException) throw e
                 // T8.3: preview failures are file errors; recovery is picking

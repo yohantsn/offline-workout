@@ -1,12 +1,19 @@
 package com.offlineworkout.data.backup
 
+import android.content.ContentProvider
+import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
+import android.database.MatrixCursor
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -14,6 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowContentResolver
 import java.io.File
 
 // T8.1: SAF gateway. Uses a real ContentResolver with a temporary file-backed
@@ -201,6 +209,72 @@ class AndroidBackupFileGatewayTest {
         assertEquals(0, File(context.cacheDir, "backups").listFiles()!!.size)
         // Idempotent: a second startup with an empty cache is a no-op.
         g.clearStagedCacheBlocking()
+    }
+
+    @Test
+    fun describe_returns_name_size_and_modified() = runTest {
+        val authority = "com.test.describe.full"
+        ShadowContentResolver.registerProviderInternal(
+            authority,
+            MetaProvider(
+                arrayOf(
+                    OpenableColumns.DISPLAY_NAME,
+                    OpenableColumns.SIZE,
+                    DocumentsContract.Document.COLUMN_LAST_MODIFIED
+                ),
+                arrayOf<Any?>("treino-backup.json", 1331L, 1_714_953_600_000L)
+            )
+        )
+        val info = gateway.describe("content://$authority/treino-backup.json").getOrThrow()
+        assertEquals("treino-backup.json", info.fileName)
+        assertEquals(1331L, info.sizeBytes)
+        assertEquals(1_714_953_600_000L, info.modifiedAtEpochMs)
+    }
+
+    @Test
+    fun describe_without_modified_column_falls_back_to_null() = runTest {
+        val authority = "com.test.describe.nomodified"
+        ShadowContentResolver.registerProviderInternal(
+            authority,
+            MetaProvider(
+                arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE),
+                arrayOf<Any?>("b.json", 42L)
+            )
+        )
+        val info = gateway.describe("content://$authority/b.json").getOrThrow()
+        assertEquals("b.json", info.fileName)
+        assertEquals(42L, info.sizeBytes)
+        assertNull(info.modifiedAtEpochMs)
+    }
+
+    @Test
+    fun describe_of_unknown_provider_fails_without_throwing() = runTest {
+        assertTrue(gateway.describe("content://unknown.authority.invalid/file").isFailure)
+    }
+
+    private class MetaProvider(
+        private val columns: Array<String>,
+        private val values: Array<Any?>
+    ) : ContentProvider() {
+        override fun onCreate(): Boolean = true
+        override fun query(
+            uri: Uri,
+            projection: Array<String>?,
+            selection: String?,
+            selectionArgs: Array<String>?,
+            sortOrder: String?
+        ): Cursor {
+            return MatrixCursor(columns).apply { addRow(values) }
+        }
+        override fun getType(uri: Uri): String? = null
+        override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+        override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int = 0
+        override fun update(
+            uri: Uri,
+            values: ContentValues?,
+            selection: String?,
+            selectionArgs: Array<String>?
+        ): Int = 0
     }
 
     @Test

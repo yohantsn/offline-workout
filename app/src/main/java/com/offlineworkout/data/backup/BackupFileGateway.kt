@@ -14,7 +14,19 @@ interface BackupFileGateway {
     // idempotent and never throw: a failed cleanup is retried next startup.
     suspend fun clearStagedCache(): Result<Unit>
     suspend fun purgeExpiredStagedCache(): Result<Unit>
+
+    // Redesign (prévia): metadados do documento para a sheet, sem ler o
+    // conteúdo. modifiedAtEpochMs é null quando o provedor não fornece.
+    suspend fun describe(uriString: String): Result<BackupFileInfo>
 }
+
+// Redesign (prévia): nome/tamanho/data do arquivo vindos do provedor (SAF).
+// modifiedAtEpochMs null = provedor omite → a UI mostra "—", nunca inventa.
+data class BackupFileInfo(
+    val fileName: String,
+    val sizeBytes: Long,
+    val modifiedAtEpochMs: Long?
+)
 
 // T8.3: the selected document is above the measured technical limit. Carried
 // as its own type so the ViewModel can offer "escolher outro arquivo" instead
