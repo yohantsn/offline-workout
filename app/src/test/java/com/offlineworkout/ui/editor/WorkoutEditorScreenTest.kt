@@ -2,6 +2,7 @@ package com.offlineworkout.ui.editor
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -117,6 +118,8 @@ class WorkoutEditorScreenTest {
     @Test
     fun series_card_shows_discriminated_fields_with_units() {
         idleScreen(WorkoutEditorUiState.Ready(blankForm().copy(exercises = listOf(seriesExercise()))))
+        // Colapsado por padrão: expandir primeiro; mover fica no resumo.
+        composeTestRule.onNodeWithContentDescription("Expandir Squat").performClick()
         composeTestRule.onNodeWithText("Séries alvo").assertExists()
         composeTestRule.onNodeWithText("Repetições alvo (reps)").assertExists()
         composeTestRule.onNodeWithText("Peso alvo (kg, opcional)").assertExists()
@@ -126,12 +129,32 @@ class WorkoutEditorScreenTest {
     }
 
     @Test
+    fun only_one_exercise_expanded_at_a_time() {
+        val two = listOf(
+            seriesExercise(clientId = "new-1").copy(nameText = "Primeiro"),
+            seriesExercise(clientId = "new-2").copy(nameText = "Segundo")
+        )
+        idleScreen(WorkoutEditorUiState.Ready(blankForm().copy(exercises = two)))
+        // Nada expandido: nenhum campo à vista.
+        composeTestRule.onAllNodesWithText("Séries alvo", substring = true).assertCountEquals(0)
+        composeTestRule.onNodeWithContentDescription("Expandir Primeiro").performClick()
+        composeTestRule.onAllNodesWithText("Séries alvo", substring = true).assertCountEquals(1)
+        // O segundo card está fora da dobra: rola até ele antes de tocar.
+        composeTestRule.onNodeWithTag("editorList").performScrollToNode(hasText("Segundo"))
+        // Abrir o segundo colapsa o primeiro.
+        composeTestRule.onNodeWithContentDescription("Expandir Segundo").performClick()
+        composeTestRule.onAllNodesWithText("Séries alvo", substring = true).assertCountEquals(1)
+        composeTestRule.onNodeWithContentDescription("Recolher Segundo").assertExists()
+    }
+
+    @Test
     fun timed_card_shows_only_duration() {
         val timed = seriesExercise().copy(
             type = ExerciseType.TIMED, targetSetsText = "", targetRepsText = "",
             targetDurationSecondsText = "60"
         )
         idleScreen(WorkoutEditorUiState.Ready(blankForm().copy(exercises = listOf(timed))))
+        composeTestRule.onNodeWithContentDescription("Expandir Squat").performClick()
         composeTestRule.onNodeWithText("Duração alvo (s)").assertExists()
         composeTestRule.onAllNodesWithText("Séries alvo", substring = true).assertCountEquals(0)
     }
@@ -143,6 +166,7 @@ class WorkoutEditorScreenTest {
             targetDurationSecondsText = "600", targetDistanceMetersText = "1000"
         )
         idleScreen(WorkoutEditorUiState.Ready(blankForm().copy(exercises = listOf(distance))))
+        composeTestRule.onNodeWithContentDescription("Expandir Squat").performClick()
         composeTestRule.onNodeWithText("Distância alvo (m)").assertExists()
         composeTestRule.onNodeWithText("Duração alvo (s)").assertExists()
     }
@@ -158,7 +182,40 @@ class WorkoutEditorScreenTest {
         )
         idleScreen(WorkoutEditorUiState.Ready(form))
         composeTestRule.onNodeWithText("Informe o código").assertExists()
+        composeTestRule.onNodeWithContentDescription("Expandir Squat").performClick()
         composeTestRule.onNodeWithText("Séries deve ser inteiro > 0").assertExists()
+    }
+
+    @Test
+    fun exercise_field_errors_show_below_each_field() {
+        val form = blankForm().copy(
+            fieldErrors = mapOf(
+                EditorField.EXERCISE_NAME to "Informe o nome do exercício",
+                EditorField.REST_SECONDS to "Descanso deve ser inteiro >= 0"
+            ),
+            exercises = listOf(seriesExercise())
+        )
+        idleScreen(WorkoutEditorUiState.Ready(form))
+        composeTestRule.onNodeWithContentDescription("Expandir Squat").performClick()
+        // Borda error + mensagem abaixo de cada campo, não bloco no topo.
+        composeTestRule.onNodeWithText("Informe o nome do exercício").assertExists()
+        composeTestRule.onNodeWithText("Descanso deve ser inteiro >= 0").assertExists()
+    }
+
+    @Test
+    fun move_buttons_disable_at_the_extremes() {
+        val two = listOf(
+            seriesExercise(clientId = "new-1").copy(nameText = "Primeiro"),
+            seriesExercise(clientId = "new-2").copy(nameText = "Segundo")
+        )
+        idleScreen(WorkoutEditorUiState.Ready(blankForm().copy(exercises = two)))
+        // O segundo card está fora da dobra: rola até ele antes de afirmar.
+        composeTestRule.onNodeWithTag("editorList").performScrollToNode(hasText("Segundo"))
+        // Primeiro não sobe, último não desce; os demais habilitados.
+        composeTestRule.onNodeWithContentDescription("Mover Primeiro para cima").assertIsNotEnabled()
+        composeTestRule.onNodeWithContentDescription("Mover Primeiro para baixo").assertIsEnabled()
+        composeTestRule.onNodeWithContentDescription("Mover Segundo para cima").assertIsEnabled()
+        composeTestRule.onNodeWithContentDescription("Mover Segundo para baixo").assertIsNotEnabled()
     }
 
     @Test
@@ -219,9 +276,8 @@ class WorkoutEditorScreenTest {
             ),
             onSave = { saved += 1 }
         )
-        // The first exercise is composed; the last action is not, until scrolled.
+        // Salvar mora na TopAppBar (sempre visível): sem rolagem até ele.
         composeTestRule.onNodeWithTag("exercise-new-1").assertExists()
-        composeTestRule.onNodeWithTag("editorList").performScrollToNode(hasText("Salvar"))
         composeTestRule.onNodeWithText("Salvar").assertIsDisplayed().performClick()
         composeTestRule.runOnIdle { assertEquals(1, saved) }
         // Every exercise is reachable by scrolling, not only the first.

@@ -120,4 +120,46 @@
     <string name="history_load_more">Carregar mais</string>
     <string name="history_loading">Carregando…</string>
     <string name="history_exercise_cd">Ver histórico de %1$s</string>
+    <!-- Lote 6 (redesign): editor -->
+    <string name="editor_new">Novo treino</string>
+    <string name="editor_edit">Editar treino</string>
+    <string name="editor_save">Salvar</string>
+    <string name="editor_cancel">Cancelar</string>
+    <string name="editor_add">Adicionar exercício</string>
+    <string name="editor_close">Fechar</string>
+    <string name="editor_code">Código</string>
+    <string name="editor_workout_name">Nome do treino</string>
+    <string name="editor_exercise_name">Nome do exercício</string>
+    <string name="editor_rest">Descanso (s)</string>
+    <string name="editor_sets">Séries alvo</string>
+    <string name="editor_reps">Repetições alvo (reps)</string>
+    <string name="editor_weight">Peso alvo (kg, opcional)</string>
+    <string name="editor_duration">Duração alvo (s)</string>
+    <string name="editor_distance">Distância alvo (m)</string>
+    <string name="editor_move_up">Subir</string>
+    <string name="editor_move_down">Descer</string>
+    <string name="editor_move_up_cd">Mover %1$s para cima</string>
+    <string name="editor_move_down_cd">Mover %1$s para baixo</string>
+    <string name="editor_expand_cd">Expandir %1$s</string>
+    <string name="editor_collapse_cd">Recolher %1$s</string>
+    <string name="editor_type_title">Que tipo de exercício?</string>
+    <string name="editor_type_series">Séries</string>
+    <string name="editor_type_timed">Tempo</string>
+    <string name="editor_type_distance">Distância/Tempo</string>
+    <string name="editor_desc_series">Repetições e peso, série por série.</string>
+    <string name="editor_desc_timed">Duração em segundos. Sem peso.</string>
+    <string name="editor_desc_distance">Metros e segundos. Ideal para cardio.</string>
+    <plurals name="editor_series">
+        <item quantity="one">série</item>
+        <item quantity="other">séries</item>
+    </plurals>
+    <string name="editor_saving">Salvando…</string>
+    <string name="editor_error">Não foi possível salvar. Verifique os campos.</string>
+    <string name="editor_retry">Tentar novamente</string>
+    <string name="editor_discard_title">Descartar alterações?</string>
+    <string name="editor_discard_text">As alterações deste treino serão perdidas.</string>
+    <string name="editor_discard_confirm">Descartar</string>
+    <string name="editor_discard_dismiss">Continuar editando</string>
+    <string name="editor_loading_text">Carregando treino…</string>
+    <string name="editor_loading_cd">Carregando treino</string>
 </resources>
