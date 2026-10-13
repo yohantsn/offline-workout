@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,12 +30,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.offlineworkout.R
 import com.offlineworkout.data.model.ExerciseExecutionView
@@ -364,6 +367,8 @@ private fun ExerciseChips(
                 ) {
                     Text(
                         text = spec.name,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.semantics { contentDescription = cd }
                     )
                 }
@@ -374,6 +379,8 @@ private fun ExerciseChips(
                 ) {
                     Text(
                         text = spec.name,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.semantics { contentDescription = cd }
                     )
                 }
@@ -452,7 +459,10 @@ private fun ChartCard(chart: HistoryChartData) {
     } else {
         stringResource(R.string.history_chart_points, points.size)
     }
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
@@ -518,7 +528,7 @@ private fun derivedSummary(
     }
     val head = stringResource(
         R.string.history_summary_head,
-        rows.size,
+        pluralStringResource(R.plurals.history_execution_count, rows.size, rows.size),
         formatHistoryTimestamp(oldest)
     )
     return if (metric == null) head else "$head • $metric"
@@ -531,7 +541,11 @@ private fun summaryText(
     type: ExerciseType?
 ): String {
     val first = stats.firstPerformedAtWallClockMs?.let { formatHistoryTimestamp(it) } ?: stringResource(R.string.numeric_empty)
-    val head = stringResource(R.string.history_summary_head, stats.count, first)
+    val head = stringResource(
+        R.string.history_summary_head,
+        pluralStringResource(R.plurals.history_execution_count, stats.count, stats.count),
+        first
+    )
     val newest = rows.firstOrNull()
     val metric = when (type) {
         ExerciseType.SERIES -> newest?.sets?.lastOrNull()?.weightKg?.let {
@@ -551,6 +565,7 @@ private fun summaryText(
 @Composable
 private fun HistoryRow(row: ExerciseExecutionView) {
     Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

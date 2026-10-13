@@ -314,6 +314,18 @@ class WorkoutHistoryScreenTest {
     }
 
     @Test
+    fun summary_uses_singular_for_one_execution() {
+        idleScreen(
+            ready(
+                rows = listOf(execution(10L, 2000L)),
+                statsData = HistoryStats(1L, 1, 2000L, 2000L)
+            )
+        )
+        composeTestRule.onNodeWithText("1 execução • primeira", substring = true).assertExists()
+        composeTestRule.onAllNodesWithText("1 execuções").assertCountEquals(0)
+    }
+
+    @Test
     fun summary_tiles_show_sessions_and_last_load() {
         idleScreen(ready())
         composeTestRule.onNodeWithText("Sessões").assertExists()

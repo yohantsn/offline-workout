@@ -103,7 +103,11 @@
     <string name="history_chart_points">%d pontos</string>
     <string name="history_chart_points_sub">%d de %d pontos</string>
     <string name="history_chart_subtitle">%1$s · %2$s · %3$s</string>
-    <string name="history_summary_head">%1$d execuções • primeira %2$s</string>
+    <plurals name="history_execution_count">
+        <item quantity="one">%d execução</item>
+        <item quantity="other">%d execuções</item>
+    </plurals>
+    <string name="history_summary_head">%1$s • primeira %2$s</string>
     <string name="history_metric_weight">último peso: %1$s kg</string>
     <string name="history_metric_duration">última duração: %1$s s</string>
     <string name="history_metric_distance">última distância: %1$s m</string>

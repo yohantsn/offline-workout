@@ -357,6 +357,10 @@ private fun PreviewSheet(
 
 // Contagem compacta da prévia (wireframe §3.5: 4 caixas em fileira, número
 // tabular). Screen-private: não é componente compartilhado.
+// B-7 ANOTADO p/ ui-reviewer: a 2.0× o rótulo pode quebrar no meio da palavra
+// em caixa de ~80 dp. NÃO truncar com ellipsis (violaria "texto grande não
+// trunca", requisito do projeto) — grid 2×2 ou hifenização ficam para decisão
+// com captura real.
 @Composable
 private fun CountBox(label: String, value: String, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
