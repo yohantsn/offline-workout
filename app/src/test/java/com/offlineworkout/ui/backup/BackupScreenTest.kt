@@ -148,6 +148,27 @@ class BackupScreenTest {
     }
 
     @Test
+    fun preview_sheet_counts_use_singular_for_one() {
+        // B-5: "1 treino", nunca "1 treinos".
+        screen(
+            BackupUiState.Preview(
+                preview().copy(
+                    workoutCount = 1,
+                    exerciseCount = 1,
+                    executionCount = 1,
+                    executionSetCount = 1
+                )
+            )
+        )
+        composeTestRule.onNodeWithText("treino").assertExists()
+        composeTestRule.onNodeWithText("exercício").assertExists()
+        composeTestRule.onNodeWithText("sessão").assertExists()
+        composeTestRule.onNodeWithText("série").assertExists()
+        composeTestRule.onAllNodesWithText("1 treinos").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("1 séries").assertCountEquals(0)
+    }
+
+    @Test
     fun preview_sheet_shows_file_metadata() {
         screen(
             BackupUiState.Preview(
@@ -230,7 +251,9 @@ class BackupScreenTest {
                 )
             )
         )
-        composeTestRule.onNodeWithText("Importação concluída: 2 treinos, 5 exercícios, 7 execuções")
+        // B-3: título curto + detalhe separado (antes era uma linha só).
+        composeTestRule.onNodeWithText("Importação concluída").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2 treinos, 5 exercícios, 7 execuções")
             .assertIsDisplayed()
     }
 
@@ -243,11 +266,32 @@ class BackupScreenTest {
             ),
             callbacks
         )
-        composeTestRule.onNodeWithText("Backup exportado: backup.json").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Backup exportado").assertIsDisplayed()
+        composeTestRule.onNodeWithText("backup.json").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("Compartilhar arquivo de backup")
             .assertIsDisplayed()
             .performClick()
         assertEquals(1, callbacks.shared)
+    }
+
+    @Test
+    fun export_success_with_long_filename_keeps_actions_reachable() {
+        // A-6: nome longo não quebra o card nem empurra os botões para fora.
+        val callbacks = Callbacks()
+        val longName = "offline-workout-backup-" + "0123456789".repeat(12) + ".json"
+        screen(
+            BackupUiState.Success(
+                BackupUiResult(BackupOperation.EXPORT, longName, null)
+            ),
+            callbacks
+        )
+        composeTestRule.onNodeWithText("Backup exportado").assertIsDisplayed()
+        composeTestRule.onNodeWithText(longName).assertExists()
+        composeTestRule.onNodeWithContentDescription("Compartilhar arquivo de backup")
+            .assertIsDisplayed()
+            .performClick()
+        assertEquals(1, callbacks.shared)
+        composeTestRule.onNodeWithText("Exportar novamente").assertIsDisplayed()
     }
 
     @Test

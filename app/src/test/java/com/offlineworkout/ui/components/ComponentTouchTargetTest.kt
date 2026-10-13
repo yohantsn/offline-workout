@@ -1,10 +1,13 @@
 package com.offlineworkout.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -152,6 +155,53 @@ class ComponentTouchTargetTest {
             "NumericField height was $heightDp dp (min 64.dp, density $density)",
             heightDp >= 64.dp
         )
+    }
+
+    @Test
+    fun errorCard_recovery_button_is_full_width() {
+        composeTestRule.setContent {
+            OfflineWorkoutTheme {
+                Box(
+                    modifier = Modifier.width(300.dp)
+                ) {
+                    ErrorCard(
+                        message = "Falhou.",
+                        recoveryLabel = "Tentar novamente",
+                        onRecovery = {}
+                    )
+                }
+            }
+        }
+        // C-1: sem fillMaxWidth o botão mede ~150 dp (largura de conteúdo);
+        // com o card de 300 dp menos o padding de 32 dp, exige-se bem acima.
+        val node = composeTestRule.onNode(hasText("Tentar novamente") and hasClickAction())
+        node.assertExists()
+        val density = composeTestRule.density
+        val widthDp = with(density) { node.fetchSemanticsNode().size.width.toDp() }
+        assertTrue(
+            "ErrorCard recovery width was $widthDp dp (density $density)",
+            widthDp >= 200.dp
+        )
+    }
+
+    @Test
+    fun loading_skeleton_reserves_card_height() {
+        composeTestRule.setContent {
+            OfflineWorkoutTheme {
+                LoadingSkeleton(lines = 2)
+            }
+        }
+        // C-2: cada esqueleto tem a altura do card real (144 dp), não 20 dp.
+        repeat(2) { index ->
+            val node = composeTestRule.onNodeWithTag("loadingCard$index")
+            node.assertExists()
+            val density = composeTestRule.density
+            val heightDp = with(density) { node.fetchSemanticsNode().size.height.toDp() }
+            assertTrue(
+                "skeleton card $index height was $heightDp dp (density $density)",
+                heightDp >= 144.dp
+            )
+        }
     }
 
     @Test

@@ -29,12 +29,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.offlineworkout.R
 import com.offlineworkout.data.repository.BackupFailure
@@ -42,7 +44,7 @@ import com.offlineworkout.data.repository.BackupPreview
 import com.offlineworkout.ui.components.AppTopBar
 import com.offlineworkout.ui.components.ErrorCard
 import com.offlineworkout.ui.components.PrimaryButton
-import com.offlineworkout.ui.components.SecondaryButton
+import com.offlineworkout.ui.theme.LocalSuccessColors
 import com.offlineworkout.viewmodel.BackupOperation
 import com.offlineworkout.viewmodel.BackupRecovery
 import com.offlineworkout.viewmodel.BackupUiResult
@@ -146,7 +148,10 @@ fun BackupScreen(
 @Composable
 private fun ExportImportCards(onExport: () -> Unit, onImport: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -168,7 +173,10 @@ private fun ExportImportCards(onExport: () -> Unit, onImport: () -> Unit) {
                 )
             }
         }
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -190,10 +198,12 @@ private fun ExportImportCards(onExport: () -> Unit, onImport: () -> Unit) {
                         modifier = Modifier.padding(12.dp)
                     )
                 }
+                // B-1: texto em onErrorContainer (não error) sobre o card:
+                // error #DC2626 sobre card claro dá 3.69:1 e reprova 4.5:1.
                 OutlinedButton(
                     onClick = onImport,
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
                     ),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
                     modifier = Modifier
@@ -277,22 +287,34 @@ private fun PreviewSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 CountBox(
-                    label = stringResource(R.string.backup_count_workouts),
+                    label = pluralStringResource(
+                        R.plurals.backup_count_workouts,
+                        preview.workoutCount
+                    ),
                     value = preview.workoutCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
                 CountBox(
-                    label = stringResource(R.string.backup_count_exercises),
+                    label = pluralStringResource(
+                        R.plurals.backup_count_exercises,
+                        preview.exerciseCount
+                    ),
                     value = preview.exerciseCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
                 CountBox(
-                    label = stringResource(R.string.backup_count_sessions),
+                    label = pluralStringResource(
+                        R.plurals.backup_count_sessions,
+                        preview.executionCount
+                    ),
                     value = preview.executionCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
                 CountBox(
-                    label = stringResource(R.string.backup_count_sets),
+                    label = pluralStringResource(
+                        R.plurals.backup_count_sets,
+                        preview.executionSetCount
+                    ),
                     value = preview.executionSetCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
@@ -319,11 +341,16 @@ private fun PreviewSheet(
             ) {
                 Text(text = stringResource(R.string.backup_replace_all))
             }
-            SecondaryButton(
-                text = stringResource(R.string.backup_cancel),
+            // B-4: a ação segura recua — contornada, nunca preenchida ao lado
+            // do destrutivo.
+            OutlinedButton(
                 onClick = onCancelPreview,
-                modifier = Modifier.fillMaxWidth()
-            )
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            ) {
+                Text(text = stringResource(R.string.backup_cancel))
+            }
         }
     }
 }
@@ -365,34 +392,71 @@ private fun SuccessBlock(
     onExport: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
+    val success = LocalSuccessColors.current
     val shareDescription = stringResource(R.string.backup_share_cd)
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = success.successContainer),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(
             modifier = Modifier
                 .padding(16.dp)
                 .semantics { liveRegion = LiveRegionMode.Polite },
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = when (result.operation) {
-                    BackupOperation.EXPORT -> stringResource(
-                        R.string.backup_exported,
-                        result.fileName ?: ""
+            // B-3: bloco de sucesso em successContainer, com ✓ e título em
+            // onSuccessContainer (o par success/successContainer reprova 4.5:1
+            // como texto). Subtítulo: nome do arquivo (A-6: com maxLines) ou
+            // contagens da importação. Tamanho do arquivo indisponível sem
+            // mudar BackupUiResult (fora do escopo da revisão).
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "✓",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = success.onSuccessContainer
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = when (result.operation) {
+                            BackupOperation.EXPORT -> stringResource(R.string.backup_exported_title)
+                            BackupOperation.SHARE -> stringResource(R.string.backup_shared)
+                            BackupOperation.IMPORT -> stringResource(R.string.backup_import_done_title)
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = success.onSuccessContainer,
+                        modifier = Modifier.semantics { heading() }
                     )
-                    BackupOperation.SHARE -> stringResource(R.string.backup_shared)
-                    BackupOperation.IMPORT -> stringResource(
-                        R.string.backup_import_done,
-                        result.importedCounts?.workoutCount ?: 0,
-                        result.importedCounts?.exerciseCount ?: 0,
-                        result.importedCounts?.executionCount ?: 0
-                    )
-                },
-                style = MaterialTheme.typography.bodyLarge
-            )
+                    val detail = when (result.operation) {
+                        BackupOperation.EXPORT, BackupOperation.SHARE -> result.fileName
+                        BackupOperation.IMPORT -> result.importedCounts?.let {
+                            stringResource(
+                                R.string.backup_import_counts,
+                                it.workoutCount,
+                                it.exerciseCount,
+                                it.executionCount
+                            )
+                        }
+                    }
+                    if (detail != null) {
+                        Text(
+                            text = detail,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = success.onSuccessContainer,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
             if (
                 result.operation == BackupOperation.EXPORT ||
                 result.operation == BackupOperation.SHARE
             ) {
+                // B-2: Compartilhar mantém o tonal (ação do resultado);
+                // Exportar novamente recua para contornado primary.
                 Button(
                     onClick = onShare,
                     colors = ButtonDefaults.buttonColors(
@@ -411,11 +475,18 @@ private fun SuccessBlock(
                     )
                 }
             }
-            SecondaryButton(
-                text = stringResource(R.string.backup_export_again),
+            OutlinedButton(
                 onClick = onExport,
-                modifier = Modifier.fillMaxWidth()
-            )
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = scheme.primary
+                ),
+                border = BorderStroke(1.dp, scheme.outline),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            ) {
+                Text(text = stringResource(R.string.backup_export_again))
+            }
         }
     }
 }
@@ -430,33 +501,26 @@ private fun ErrorBlock(
 ) {
     // T8.3: a ação oferecida é a que realmente recupera — erro de arquivo
     // rearma o picker, erro de storage tenta de novo. A causa é preservada no
-    // message; erro de arquivo afirma que nada foi alterado (o arquivo ruim
-    // nunca chega ao banco). Storage não afirma: a UI não sabe se a escrita
-    // parcial ocorreu.
+    // message; a reasseguração vai DENTRO do card, acima do botão (B-8: abaixo
+    // do botão ela é lida depois do dedo). Storage não afirma: a UI não sabe
+    // se a escrita parcial ocorreu. supportingText em vez do slot
+    // secondaryLabel: o slot renderiza um OutlinedButton, e a frase não é ação.
     val dataIntact = failure !is BackupFailure.Storage
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ErrorCard(
-            message = errorMessage(failure),
-            recoveryLabel = if (recovery == BackupRecovery.PICK_ANOTHER_FILE) {
-                stringResource(R.string.backup_pick_another)
-            } else {
-                stringResource(R.string.backup_retry)
-            },
-            onRecovery = if (recovery == BackupRecovery.PICK_ANOTHER_FILE) {
-                onPickAnotherFile
-            } else {
-                onRetry
-            },
-            modifier = modifier
-        )
-        if (dataIntact) {
-            Text(
-                text = stringResource(R.string.backup_intact),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
+    ErrorCard(
+        message = errorMessage(failure),
+        recoveryLabel = if (recovery == BackupRecovery.PICK_ANOTHER_FILE) {
+            stringResource(R.string.backup_pick_another)
+        } else {
+            stringResource(R.string.backup_retry)
+        },
+        onRecovery = if (recovery == BackupRecovery.PICK_ANOTHER_FILE) {
+            onPickAnotherFile
+        } else {
+            onRetry
+        },
+        supportingText = if (dataIntact) stringResource(R.string.backup_intact) else null,
+        modifier = modifier
+    )
 }
 
 @Composable

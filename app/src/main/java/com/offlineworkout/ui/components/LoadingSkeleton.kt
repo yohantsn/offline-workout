@@ -10,10 +10,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
-// Substitui CircularProgressIndicator solto: N linhas-fantasma que ocupam o
-// espaço do conteúdo (lista loading = 2 cards), sem salto de layout.
+// Substitui CircularProgressIndicator solto: esqueletos com a ALTURA DO CARD
+// real (144 dp, raio large), para não haver salto de layout ao carregar.
+// `lines` = quantos cards reservar (lista loading = 2 cards).
 @Composable
 fun LoadingSkeleton(lines: Int = 2, modifier: Modifier = Modifier) {
     Column(
@@ -23,11 +25,15 @@ fun LoadingSkeleton(lines: Int = 2, modifier: Modifier = Modifier) {
         repeat(lines.coerceAtLeast(1)) { index ->
             Box(
                 modifier = Modifier
+                    .testTag("loadingCard$index")
                     .fillMaxWidth()
-                    .height(if (index == 0) 24.dp else 20.dp)
-                    .clip(MaterialTheme.shapes.medium)
+                    .height(CARD_SKELETON_HEIGHT_DP.dp)
+                    .clip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
         }
     }
 }
+
+// Altura do card real da lista (conteúdo + paddings), para a reserva cobrir.
+internal const val CARD_SKELETON_HEIGHT_DP = 144

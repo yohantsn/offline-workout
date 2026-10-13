@@ -81,6 +81,11 @@ class ThemeContrastTest {
     fun light_successText_on_successContainer() =
         assertNormalText("light success text/successContainer", 0xFF065F46, 0xFFD1FAE5)
 
+    @Test
+    fun light_onErrorContainer_on_surface() =
+        // B-1: texto do botão importar contornado sobre o card claro.
+        assertNormalText("light onErrorContainer/surface", 0xFF7F1D1D, 0xFFFFFFFF)
+
     // ---- light: 3:1 (texto grande/gráfico) + reporte < 4.5 ----
 
     @Test
@@ -153,6 +158,15 @@ class ThemeContrastTest {
     @Test
     fun dark_success_on_surfaceVariant() =
         assertNormalText("dark success/surfaceVariant", 0xFF34D399, 0xFF27272A)
+
+    @Test
+    fun dark_onSuccessContainer_on_successContainer() =
+        // B-3: título do bloco de sucesso (par cruzado entre temas).
+        assertNormalText("dark onSuccessContainer/successContainer", 0xFFD1FAE5, 0xFF065F46)
+
+    @Test
+    fun dark_onErrorContainer_on_surface() =
+        assertNormalText("dark onErrorContainer/surface", 0xFFFEE2E2, 0xFF18181B)
 
     // ---- dark: 3:1 (gráfico) ----
 

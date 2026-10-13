@@ -2,6 +2,7 @@ package com.offlineworkout.ui.components
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -31,7 +32,9 @@ fun AppTopBar(
                 modifier = Modifier.semantics { heading() }
             )
         },
-        modifier = modifier,
+        // Altura mínima em vez de travada: cresce com fonte grande/títulos
+        // longos em vez de estourar.
+        modifier = modifier.heightIn(min = 64.dp),
         navigationIcon = {
             if (onBack != null) {
                 TextButton(

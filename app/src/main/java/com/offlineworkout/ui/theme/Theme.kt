@@ -16,12 +16,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Success/descuido semântico: não existe no ColorScheme do Material 3.
-// Fornecido via CompositionLocal, com override para dark.
-data class SuccessColors(val success: Color, val successContainer: Color)
+// Papel semântico de sucesso: não existe no ColorScheme do Material 3.
+// Fornecido via CompositionLocal, com override para dark. onSuccessContainer
+// é o par do container (o par success/successContainer sozinho reprova 4.5:1
+// como texto nos dois temas).
+data class SuccessColors(
+    val success: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color
+)
 
 val LocalSuccessColors = staticCompositionLocalOf {
-    SuccessColors(Color(0xFF059669), Color(0xFFD1FAE5))
+    SuccessColors(Color(0xFF059669), Color(0xFFD1FAE5), Color(0xFF065F46))
 }
 
 private val LightColors = lightColorScheme(
@@ -35,6 +41,12 @@ private val LightColors = lightColorScheme(
     errorContainer = Color(0xFFFEE2E2), onErrorContainer = Color(0xFF7F1D1D),
     surface = Color(0xFFFFFFFF), onSurface = Color(0xFF18181B),
     surfaceVariant = Color(0xFFF4F4F5), onSurfaceVariant = Color(0xFF52525B),
+    surfaceDim = Color(0xFFD4D4D8), surfaceBright = Color(0xFFFFFFFF),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF4F4F5),
+    surfaceContainer = Color(0xFFECECF0),
+    surfaceContainerHigh = Color(0xFFE4E4E7),
+    surfaceContainerHighest = Color(0xFFD4D4D8),
     outline = Color(0xFFD4D4D8), background = Color(0xFFFAFAFA),
     onBackground = Color(0xFF18181B)
 )
@@ -50,12 +62,18 @@ private val DarkColors = darkColorScheme(
     errorContainer = Color(0xFF7F1D1D), onErrorContainer = Color(0xFFFEE2E2),
     surface = Color(0xFF18181B), onSurface = Color(0xFFFAFAFA),
     surfaceVariant = Color(0xFF27272A), onSurfaceVariant = Color(0xFFA1A1AA),
+    surfaceDim = Color(0xFF09090B), surfaceBright = Color(0xFF52525B),
+    surfaceContainerLowest = Color(0xFF09090B),
+    surfaceContainerLow = Color(0xFF18181B),
+    surfaceContainer = Color(0xFF27272A),
+    surfaceContainerHigh = Color(0xFF3F3F46),
+    surfaceContainerHighest = Color(0xFF52525B),
     outline = Color(0xFF52525B), background = Color(0xFF09090B),
     onBackground = Color(0xFFFAFAFA)
 )
 
-private val SuccessLight = SuccessColors(Color(0xFF059669), Color(0xFFD1FAE5))
-private val SuccessDark = SuccessColors(Color(0xFF34D399), Color(0xFF065F46))
+private val SuccessLight = SuccessColors(Color(0xFF059669), Color(0xFFD1FAE5), Color(0xFF065F46))
+private val SuccessDark = SuccessColors(Color(0xFF34D399), Color(0xFF065F46), Color(0xFFD1FAE5))
 
 private val TypographyOurs = Typography(
     displayLarge = TextStyle(

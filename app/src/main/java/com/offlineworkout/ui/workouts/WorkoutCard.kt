@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,15 +19,15 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.offlineworkout.R
 import com.offlineworkout.ui.components.CodeChip
 
-// Card da lista: o card INTEIRO executa (contentDescription "Executar {name}").
-// Editar/Histórico são clicáveis filhos e param a propagação do clique.
-// totalRestSeconds faz parte do contrato do plano §2, mas o dado ainda não
-// existe no repositório (lote 3 não muda repositório): recebido e ainda não
-// exibido — a linha de minutos de descanso é pendência para o lote 5+ decidir.
+// Card da lista: o card INTEIRO executa (contentDescription "Executar {name}"),
+// com fundo `surface` da spec (§2.1). Editar/Histórico são clicáveis filhos e
+// param a propagação do clique. Minutos ARREDONDADOS (90 s vira "2 min"): a
+// linha decide "vale iniciar agora?" e truncar subestima até 59 s.
 @Composable
 fun WorkoutCard(
     name: String,
@@ -45,13 +46,17 @@ fun WorkoutCard(
         R.string.list_card_meta,
         pluralStringResource(R.plurals.list_exercise_count, exerciseCount, exerciseCount),
         when {
-            totalRestSeconds >= 60 -> stringResource(R.string.list_rest_min, totalRestSeconds / 60)
+            totalRestSeconds >= 60 -> stringResource(
+                R.string.list_rest_min,
+                (totalRestSeconds + 30) / 60
+            )
             totalRestSeconds > 0 -> stringResource(R.string.list_rest_seconds, totalRestSeconds)
             else -> stringResource(R.string.list_rest_none)
         }
     )
     Card(
         onClick = onCardClick,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = modifier.semantics {
             contentDescription = executeDescription
         }
@@ -65,6 +70,8 @@ fun WorkoutCard(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.titleLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .weight(1f)
                         .semantics { heading() }

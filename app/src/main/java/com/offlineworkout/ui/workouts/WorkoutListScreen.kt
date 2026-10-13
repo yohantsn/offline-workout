@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.offlineworkout.R
 import com.offlineworkout.data.model.WorkoutSummary
 import com.offlineworkout.ui.components.AppTopBar
@@ -126,8 +127,20 @@ private fun LoadingState(modifier: Modifier = Modifier) {
 
 @Composable
 private fun EmptyState(onCreateSelected: () -> Unit, modifier: Modifier = Modifier) {
+    val illustrationDescription = stringResource(R.string.list_empty_illustration_cd)
     Box(contentAlignment = Alignment.Center, modifier = modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Ilustração do wireframe §3.1 (44 px): âncora visual do vazio,
+            // com descrição textual para leitores de tela.
+            Text(
+                text = "🏋️",
+                fontSize = 44.sp,
+                modifier = Modifier
+                    .padding(bottom = 12.dp)
+                    .semantics {
+                        contentDescription = illustrationDescription
+                    }
+            )
             Text(
                 text = stringResource(R.string.list_empty_title),
                 style = MaterialTheme.typography.titleLarge

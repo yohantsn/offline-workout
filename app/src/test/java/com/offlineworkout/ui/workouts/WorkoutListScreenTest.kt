@@ -100,6 +100,9 @@ class WorkoutListScreenTest {
     fun empty_shows_message_and_create_action() {
         val created = IntArray(1)
         idleScreen(WorkoutListUiState.Empty, created = created)
+        // A-1: ilustração do wireframe acima do título (com descrição textual).
+        composeTestRule.onNodeWithContentDescription("Ilustração: pessoa levantando peso")
+            .assertExists()
         composeTestRule.onNodeWithText("Nenhum treino ainda").assertExists()
         composeTestRule.onNodeWithText("Crie seu primeiro treino para começar a registrar séries.")
             .assertExists()
@@ -162,7 +165,20 @@ class WorkoutListScreenTest {
                 )
             )
         )
-        composeTestRule.onNodeWithText("2 exercícios · 1 min de descanso").assertExists()
+        // B-6: 90 s arredonda para "2 min", não trunca para "1 min".
+        composeTestRule.onNodeWithText("2 exercícios · 2 min de descanso").assertExists()
+    }
+
+    @Test
+    fun rest_seconds_below_a_minute_show_seconds() {
+        idleScreen(
+            WorkoutListUiState.Success(
+                listOf(
+                    WorkoutSummary(1L, "A", "Alpha", 1L, exerciseCount = 1, totalRestSeconds = 45)
+                )
+            )
+        )
+        composeTestRule.onNodeWithText("1 exercício · 45 s de descanso").assertExists()
     }
 
     @Test

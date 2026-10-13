@@ -22,6 +22,7 @@
     <string name="list_loading_cd">Carregando treinos</string>
     <string name="list_label">Lista de treinos</string>
     <string name="list_empty_title">Nenhum treino ainda</string>
+    <string name="list_empty_illustration_cd">Ilustração: pessoa levantando peso</string>
     <string name="list_empty_text">Crie seu primeiro treino para começar a registrar séries.</string>
     <string name="list_error">Não foi possível carregar os treinos.</string>
     <string name="list_retry">Tentar novamente</string>
@@ -46,17 +47,30 @@
     <string name="backup_checksum_label">Soma de verificação: %1$s</string>
     <string name="backup_file_meta">%1$s · %2$s</string>
     <string name="backup_date_unknown">—</string>
-    <string name="backup_count_workouts">treinos</string>
-    <string name="backup_count_exercises">exercícios</string>
-    <string name="backup_count_sessions">sessões</string>
-    <string name="backup_count_sets">séries</string>
+    <plurals name="backup_count_workouts">
+        <item quantity="one">treino</item>
+        <item quantity="other">treinos</item>
+    </plurals>
+    <plurals name="backup_count_exercises">
+        <item quantity="one">exercício</item>
+        <item quantity="other">exercícios</item>
+    </plurals>
+    <plurals name="backup_count_sessions">
+        <item quantity="one">sessão</item>
+        <item quantity="other">sessões</item>
+    </plurals>
+    <plurals name="backup_count_sets">
+        <item quantity="one">série</item>
+        <item quantity="other">séries</item>
+    </plurals>
     <string name="backup_replace_warning">Isto substituirá todos os dados locais</string>
     <string name="backup_no_undo">Seu treino atual e todo o histórico serão apagados. Esta ação não pode ser desfeita.</string>
     <string name="backup_replace_all">Substituir tudo</string>
     <string name="backup_cancel">Cancelar</string>
-    <string name="backup_exported">Backup exportado: %1$s</string>
+    <string name="backup_exported_title">Backup exportado</string>
     <string name="backup_shared">Backup compartilhado</string>
-    <string name="backup_import_done">Importação concluída: %1$d treinos, %2$d exercícios, %3$d execuções</string>
+    <string name="backup_import_done_title">Importação concluída</string>
+    <string name="backup_import_counts">%1$d treinos, %2$d exercícios, %3$d execuções</string>
     <string name="backup_share">Compartilhar</string>
     <string name="backup_share_cd">Compartilhar arquivo de backup</string>
     <string name="backup_export_again">Exportar novamente</string>
