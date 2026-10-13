@@ -430,7 +430,14 @@ private fun SuccessBlock(
                         modifier = Modifier.semantics { heading() }
                     )
                     val detail = when (result.operation) {
-                        BackupOperation.EXPORT, BackupOperation.SHARE -> result.fileName
+                        BackupOperation.EXPORT, BackupOperation.SHARE -> result.fileName?.let { name ->
+                            val size = result.sizeBytes?.let { formatBytes(it) }
+                            if (size != null) {
+                                stringResource(R.string.backup_file_meta, name, size)
+                            } else {
+                                name
+                            }
+                        }
                         BackupOperation.IMPORT -> result.importedCounts?.let {
                             stringResource(
                                 R.string.backup_import_counts,

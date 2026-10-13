@@ -52,7 +52,8 @@ class BackupViewModelTest {
     private val BACKUP_EXPORT_RESULT = BackupUiResult(
         BackupOperation.EXPORT,
         "offline-workout-backup-20240101-120000.json",
-        null
+        null,
+        "{}".toByteArray(Charsets.UTF_8).size.toLong()
     )
 
     @Test
@@ -79,6 +80,7 @@ class BackupViewModelTest {
         val success = vm.state.value as BackupUiState.Success
         assertEquals(BackupOperation.EXPORT, success.result.operation)
         assertEquals(document().fileName, success.result.fileName)
+        assertEquals(document().bytes.size.toLong(), success.result.sizeBytes)
     }
 
     @Test

@@ -262,12 +262,12 @@ class BackupScreenTest {
         val callbacks = Callbacks()
         screen(
             BackupUiState.Success(
-                BackupUiResult(BackupOperation.EXPORT, "backup.json", null)
+                BackupUiResult(BackupOperation.EXPORT, "backup.json", null, 1331L)
             ),
             callbacks
         )
         composeTestRule.onNodeWithText("Backup exportado").assertIsDisplayed()
-        composeTestRule.onNodeWithText("backup.json").assertIsDisplayed()
+        composeTestRule.onNodeWithText("backup.json · 1,3 KB").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("Compartilhar arquivo de backup")
             .assertIsDisplayed()
             .performClick()

@@ -64,7 +64,8 @@ private const val GENERIC_IMPORT_FILE_NAME = "backup.json"
 data class BackupUiResult(
     val operation: BackupOperation,
     val fileName: String?,
-    val importedCounts: BackupImportResult?
+    val importedCounts: BackupImportResult?,
+    val sizeBytes: Long? = null
 )
 
 sealed interface BackupEffect {
@@ -104,7 +105,7 @@ class BackupViewModel(
             result.onSuccess { document ->
                 pendingDocument = document
                 stateFlow.value = BackupUiState.Success(
-                    BackupUiResult(BackupOperation.EXPORT, document.fileName, null)
+                    BackupUiResult(BackupOperation.EXPORT, document.fileName, null, document.bytes.size.toLong())
                 )
                 effectsChannel.trySend(BackupEffect.CreateDocument(document.fileName))
             }.onFailure { e ->
@@ -132,7 +133,7 @@ class BackupViewModel(
             if (generation != operationGeneration) return@launch
             result.onSuccess {
                 stateFlow.value = BackupUiState.Success(
-                    BackupUiResult(BackupOperation.EXPORT, document.fileName, null)
+                    BackupUiResult(BackupOperation.EXPORT, document.fileName, null, document.bytes.size.toLong())
                 )
             }.onFailure { e ->
                 if (e is CancellationException) throw e
@@ -163,7 +164,7 @@ class BackupViewModel(
             fileGateway.purgeExpiredStagedCache()
             result.onSuccess {
                 stateFlow.value = BackupUiState.Success(
-                    BackupUiResult(BackupOperation.SHARE, document.fileName, null)
+                    BackupUiResult(BackupOperation.SHARE, document.fileName, null, document.bytes.size.toLong())
                 )
             }.onFailure { e ->
                 if (e is CancellationException) throw e
