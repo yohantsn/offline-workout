@@ -156,6 +156,52 @@ class RoomWorkoutRepository(
         }
     }
 
+    // T1.3: grava N agregados em uma unica transacao, tudo ou nada.
+    suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> = write {
+        val createdAts = inputs.map { input ->
+            validateWorkoutFields(input.code, input.name)?.let { throw it }
+            input.exercises.forEach { draft ->
+                if (draft.id != null) throw RepositoryFailure.Validation("new exercise must not carry an id")
+                validateAggregateExercise(draft)?.let { e -> throw e }
+            }
+            val createdAt = clock()
+            if (createdAt <= 0) throw RepositoryFailure.Validation("workout.createdAt must be positive")
+            createdAt
+        }
+        db.withTransaction {
+            val ids = mutableListOf<Long>()
+            inputs.forEachIndexed { wi, input ->
+                if (db.workoutDao().countByCode(input.code) > 0) {
+                    throw RepositoryFailure.Conflict("workout.code already exists")
+                }
+                val workoutId = db.workoutDao().insert(
+                    WorkoutEntity(code = input.code, name = input.name.trim(), createdAt = createdAts[wi])
+                )
+                val tempEntities = input.exercises.mapIndexed { ei, draft ->
+                    draft.toEntity(workoutId = workoutId, position = -(input.exercises.size + 1) - ei)
+                }
+                val insertedIds = if (tempEntities.isEmpty()) emptyList() else db.exerciseDao().insertAll(tempEntities)
+                if (insertedIds.isNotEmpty()) {
+                    val finalEntities = insertedIds.mapIndexed { ei, id ->
+                        tempEntities[ei].copy(id = id, position = ei)
+                    }
+                    db.exerciseDao().updatePositions(finalEntities)
+                }
+                ids.add(workoutId)
+            }
+            ids
+        }
+    }
+
+    suspend fun createWorkouts(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
+        createWorkoutsWithExercises(inputs)
+
+    suspend fun insertWorkouts(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
+        createWorkoutsWithExercises(inputs)
+
+    suspend fun createWorkoutAggregates(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
+        createWorkoutsWithExercises(inputs)
+
     override suspend fun updateWorkoutWithExercises(workoutId: Long, input: WorkoutAggregateDraft): Result<Unit> = write {
         validateWorkoutFields(input.code, input.name)?.let { throw it }
         input.exercises.forEach { validateAggregateExercise(it)?.let { e -> throw e } }
