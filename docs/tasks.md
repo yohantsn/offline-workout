@@ -108,13 +108,13 @@ ser corrigida para **T2.4**.
 - `CancellationException` relançada.
 - Suíte completa verde: **477 testes + os novos, 0 falhas**.
 
-### Decisões em aberto (bloqueiam o `developer`)
+### Decisões tomadas
 
-| Decisão | Opções |
-|---|---|
-| Código de treino já existente no import | (a) abortar tudo com `Conflict`; (b) sugerir código livre; (c) sufixar automático. **(a) é o padrão; (b) e (c) mudam o produto e precisam de aprovação** |
-| Limite de treinos por importação | Definir constante (sugestão: 20) e o que fazer ao exceder |
-| Treinos vazios no arquivo importado | `WorkoutEditorConfig.allowEmptyWorkout` hoje é `true`; decidir se a importação respeita ou rejeita |
+| Decisão | Escolha | Por quê |
+|---|---|---|
+| Código de treino já existente | **Abortar tudo com `Conflict`**, informando qual código colidiu | Sufixo automático ("A (2)") cria treino que o usuário não pediu e polui a lista. Sugerir código livre é bom, mas é **ação de UI** (IMP-6.1), não política de repositório: o repositório é conservador e determinístico, a revisão oferece a correção |
+| Limite de treinos por importação | **`IMPORT_MAX_WORKOUTS = 20`**, aplicado no repositório; exceder falha com `Validation` | Cobre um programa real (A/B/C) e mantém a transação limitada. **Rejeitar**, nunca truncar em silêncio — truncamento perderia treino sem o usuário perceber |
+| Treino vazio vindo do arquivo | **Rejeitar com `Validation`.** `WorkoutEditorConfig.allowEmptyWorkout` continua `true` no editor manual | Treino sem exercício vindo de planilha é quase sempre artefato de parsing, não intenção. Falhar alto é melhor que criar lixo no banco. Não mexe em `WorkoutEditorConfig` |
 
 ---
 
@@ -158,12 +158,12 @@ Copiar o `WorkoutEditorViewModel` para uma variante "multi" duplicaria a valida�
 - Cobertura por tipo (`SERIES`, `TIMED`, `DISTANCE_TIME`) e por erro de campo preservada.
 - Suíte completa verde.
 
-### Decisões em aberto
+### Decisões tomadas
 
-| Decisão | Opções |
-|---|---|
-| Onde a unidade vive | `data/model`, `ui/editor` ou `ui/common` — decidir considerando que `viewmodel` e `ui` são as duas fronteiras que a consomem |
-| Como_many_ drafts ficam na tela | Todos de uma vez, ou um por vez com indicador de progresso; afeta a composição do estado |
+| Decisão | Escolha | Por quê |
+|---|---|---|
+| Onde vive a unidade | **Novo pacote `com.offlineworkout.ui.draft`**, com o nome dos tipos a definir na implementação | Não é exclusivo do editor (importação também consome), então `ui/editor` seria semanticamente errado. `data/model` é pior: é contrato de domínio, e um formulário com `fieldErrors` é preocupação de UI. `viewmodel → ui` é **permitido** pela fronteira (o que `UiBoundaryTest` proíbe é `data.local`/Room/DAO em `ui` e `viewmodel`), e já há precedente: `ExerciseHistoryViewModel` importa `com.offlineworkout.ui.MissingRecord` |
+| Como N rascunhos ficam na tela | **Um rascunho por vez, com indicador de progresso** ("Treino 2 de 5") | Vários formulários simultâneos estouram o estado de composição e o TalkBack. A lista de erros fica resumida por trás de um contador, para o usuário ter um alvo claro de "o que foi mal lido". Revisão um-a-um também casa com o objetivo de "corrigir um valor em no máximo 2 toques" |
 
 ---
 
