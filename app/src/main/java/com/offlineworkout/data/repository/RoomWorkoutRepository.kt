@@ -156,10 +156,16 @@ class RoomWorkoutRepository(
         }
     }
 
-    // T1.3: grava N agregados em uma unica transacao, tudo ou nada.
-    suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> = write {
+    // T2.4: contrato exposto pela interface WorkoutRepository.
+    override suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> = write {
+        if (inputs.size > IMPORT_MAX_WORKOUTS) {
+            throw RepositoryFailure.Validation("import exceeds maximum of $IMPORT_MAX_WORKOUTS workouts")
+        }
         val createdAts = inputs.map { input ->
             validateWorkoutFields(input.code, input.name)?.let { throw it }
+            if (input.exercises.isEmpty()) {
+                throw RepositoryFailure.Validation("workout must contain at least one exercise")
+            }
             input.exercises.forEach { draft ->
                 if (draft.id != null) throw RepositoryFailure.Validation("new exercise must not carry an id")
                 validateAggregateExercise(draft)?.let { e -> throw e }

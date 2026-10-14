@@ -55,7 +55,7 @@ class RoomWorkoutBatchTest {
         val inputs = listOf(
             WorkoutAggregateDraft("A", "Wa", listOf(seriesDraft(), timedDraft())),
             WorkoutAggregateDraft("B", "Wb", listOf(timedDraft())),
-            WorkoutAggregateDraft("C", "Wc", emptyList())
+            WorkoutAggregateDraft("C", "Wc", listOf(seriesDraft()))
         )
         val ids = repo.createWorkoutsWithExercises(inputs).getOrThrow()
         assertEquals(3, ids.size)
@@ -128,7 +128,7 @@ class RoomWorkoutBatchTest {
     fun batch_existing_code_conflict() = runTest {
         repo.createWorkoutWithExercises(WorkoutAggregateDraft("A", "Existing", emptyList())).getOrThrow()
         val before = repo.observeWorkouts().first().size
-        val inputs = listOf(WorkoutAggregateDraft("A", "Dup", emptyList()))
+        val inputs = listOf(WorkoutAggregateDraft("A", "Dup", listOf(seriesDraft())))
         val res = repo.createWorkoutsWithExercises(inputs)
         assertTrue(res.exceptionOrNull() is RepositoryFailure.Conflict)
         assertEquals(before, repo.observeWorkouts().first().size)
