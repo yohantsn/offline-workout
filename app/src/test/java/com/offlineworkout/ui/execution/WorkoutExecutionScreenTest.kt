@@ -107,9 +107,10 @@ class WorkoutExecutionScreenTest {
         sessionState: WorkoutSessionState = session(),
         saving: Long? = null,
         error: ExecutionError? = null,
-        notice: String? = null
+        notice: String? = null,
+        workout: WorkoutSummary = WorkoutSummary(7L, "A", "Alpha", 1L)
     ) = WorkoutExecutionUiState.Ready(
-        workout = WorkoutSummary(7L, "A", "Alpha", 1L),
+        workout = workout,
         exercises = exercises,
         selectedExerciseId = selected,
         restTimer = timer,
@@ -327,6 +328,22 @@ class WorkoutExecutionScreenTest {
         assertTrue("timed CTA height was $heightDp dp", heightDp >= 64.dp)
         cta.performClick()
         composeTestRule.runOnIdle { assertEquals(listOf(2L), calls.completedExercises) }
+    }
+
+    @Test
+    fun long_title_does_not_overlap_back_action() {
+        // E-3: com 4 elementos a barra quebrava a 2.0×; com 3 (total no
+        // card), título longo degrada por ellipsis sem colidir. Sem escala
+        // de fonte no headless, 200 chars forçam a mesma pressão.
+        val title = "T".repeat(200)
+        idleScreen(ready(workout = WorkoutSummary(7L, "A", title, 1L)))
+        val titleBounds = composeTestRule.onNodeWithText(title).fetchSemanticsNode().boundsInRoot
+        val backBounds = composeTestRule.onNodeWithText("Voltar").fetchSemanticsNode().boundsInRoot
+        val overlaps = titleBounds.left < backBounds.right &&
+            titleBounds.right > backBounds.left &&
+            titleBounds.top < backBounds.bottom &&
+            titleBounds.bottom > backBounds.top
+        assertTrue("title $titleBounds overlaps back $backBounds", !overlaps)
     }
 
     @Test

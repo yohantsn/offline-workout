@@ -103,22 +103,13 @@ fun WorkoutExecutionScreen(
         modifier = modifier,
         topBar = {
             if (ready != null) {
-                val total = formatSessionElapsed(ready.session.elapsedSeconds)
+                // E-3: só 3 elementos (voltar, título, pausar/retomar) — o
+                // total saiu para o card: com 4 itens o "Pausar" quebrava
+                // letra a letra a 2.0×.
                 AppTopBar(
                     title = ready.workout.name,
                     onBack = onBack,
                     actions = {
-                        Text(
-                            text = if (foreignSession) {
-                                stringResource(R.string.execution_total_foreign, total)
-                            } else {
-                                stringResource(R.string.execution_total, total)
-                            },
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontFeatureSettings = "tnum"
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                         when (ready.session.status) {
                             is WorkoutSessionStatus.Running -> TextButton(
                                 onClick = onPauseSession,
@@ -546,6 +537,17 @@ private fun ReadyContent(
                         position = position,
                         total = state.exercises.size,
                         completedCount = state.exercises.count { it.isCompleted },
+                        sessionTotalText = if (foreignSession) {
+                            stringResource(
+                                R.string.execution_total_foreign,
+                                formatSessionElapsed(state.session.elapsedSeconds)
+                            )
+                        } else {
+                            stringResource(
+                                R.string.execution_total,
+                                formatSessionElapsed(state.session.elapsedSeconds)
+                            )
+                        },
                         isSaving = state.savingExerciseId == current.spec.id,
                         onRepsChanged = { set, value ->
                             onRepsChanged(current.spec.id, set, value)
@@ -627,6 +629,7 @@ private fun CurrentExercise(
     position: Int,
     total: Int,
     completedCount: Int,
+    sessionTotalText: String,
     isSaving: Boolean,
     onRepsChanged: (Int, String) -> Unit,
     onWeightChanged: (Int, String) -> Unit,
@@ -721,6 +724,14 @@ private fun CurrentExercise(
                     stringResource(R.string.execution_no_rest)
                 },
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            // E-3: total mora no card (numeral tabular), não na TopAppBar.
+            Text(
+                text = sessionTotalText,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFeatureSettings = "tnum"
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (!exercise.isCompleted) {
