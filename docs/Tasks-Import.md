@@ -13,13 +13,18 @@ Verificados contra o repositório em 2026-10-14.
 
 | # | Bloqueio | Evidência |
 |---|---|---|
-| B-1 | `tasks.md` e `intent.md` **não existem no repositório** | `find` por `intent*.md` / `tasks*.md` retorna vazio. O `README.md` registra "`Tasks.md` da Fase N ausente (bloqueio de fonte)" nas Fases 1 a 6 |
-| B-2 | Os pré-requisitos **T1.3, T2.3, T4.3 não estão implementados** | O `README.md` documenta como entregues **T1.2**, **T2.2** e **T4.2**. Os `.3` são a iteração seguinte e não têm escopo definido |
+| B-1 | `intent.md` **não existe no repositório** | O `README.md` registra "`Tasks.md` da Fase N ausente (bloqueio de fonte)" nas Fases 1 a 6. **Parcialmente resolvido**: [`tasks.md`](tasks.md) agora define o escopo das tarefas de fundação |
+| B-2 | Os pré-requisitos **T1.3, T2.4, T4.3 não estão implementados** | O `README.md` documenta como entregues **T1.2**, **T2.2** e **T4.2**. O escopo das tarefas `.3`/`.4` está definido em [`tasks.md`](tasks.md), mas nenhuma foi implementada |
 | B-3 | O tamanho do APK não é tratado como restrição | APK debug atual: **9,9 MB**. Sem `INTERNET`, nenhum modelo pode ser baixado em runtime |
 | B-4 | O formato `.xls` (binário antigo) não está em lugar nenhum | O escopo fala em `.xlsx` e `.csv`. `.xls` não é nenhum dos dois |
 
-Enquanto B-1 e B-2 existirem, "depende de T1.3/T2.3/T4.3" não é verificável — é uma
-referência circular para um documento ausente.
+Enquanto B-1 e B-2 existirem, os pré-requisitos não são verificáveis. B-1 está
+parcialmente resolvido por [`tasks.md`](tasks.md); B-2 só se resolve quando T1.3, T2.4 e
+T4.3 forem implementadas.
+
+> **Nota de numeração**: o desenho original citava "T2.3". Esse ID já está ocupado — foi a
+extensão dos contratos de repositório para o histórico (`README.md:563`, "T2.3 intacto"). A
+tarefa de importação é **T2.4**. Ver [`tasks.md`](tasks.md).
 
 ## Restrições herdadas do projeto
 
@@ -196,7 +201,7 @@ ui-designer ──(design)──▶ architect ──(spec técnica)──▶ dev
   - Toda saída de qualquer importer passa pelo mesmo schema de validação
   - Decisão de entrega do modelo local documentada
   - Nenhum componente exige permissão `INTERNET`
-- **Depende de**: T1.3, T2.3 (de `tasks.md`) — **bloqueados por B-1/B-2**
+- **Depende de**: T1.3, T2.4 (de [`tasks.md`](tasks.md)) — **não implementadas**
 
 ### IMP-0.2 — Implementar contratos, modelo de draft e validador
 
@@ -475,7 +480,7 @@ custosa.
   - Lista de componentes Compose a usar/reaproveitar
   - Indicador de confiança definido de forma que **não dependa só de cor**
   - Fluxo de edição mínima (corrigir um valor em no máximo 2 toques)
-- **Depende de**: IMP-5.1, T4.3 (de `tasks.md`)
+- **Depende de**: IMP-5.1, T4.3 (de [`tasks.md`](tasks.md))
 
 ### IMP-6.2 — Arquitetar estado, navegação e persistência da UI
 
@@ -609,7 +614,7 @@ custosa.
 ## Resumo de dependências
 
 ```
-Pré-requisitos (tasks.md): T1.3, T2.3, T4.3        ← B-1/B-2: não existem
+Pré-requisitos (docs/tasks.md): T1.3, T2.4, T4.3   ← definidos, não implementados
         │
 Fase 0 (Fundação) ─▶ ┬─ Fase 1 (Excel/CSV) ─────────────────────────┐
                      ├─ Fase 2 (PDF texto) ─▶ Fase 3 (OCR) ─▶ Fase 4 (LLM, opcional)
