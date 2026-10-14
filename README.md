@@ -1,16 +1,81 @@
-# Offline Workout — T9.2 Handoff: Lotes 0, 1, 2 e 3 (specs T0.1→T9.2)
+# Offline Workout
 
-Base Android de módulo único, conforme `artifacts/phase-0/architecture/index.md` (T0.1),
-`artifacts/phase-1/architecture/index.md` (T1.1, review T1.3 aprovado),
-`artifacts/phase-2/architecture/index.md` (T2.1, review T2.3 aprovado),
-`artifacts/phase-3/architecture/index.md` (T3.1, review T3.3 aprovado),
-`artifacts/phase-4/architecture/index.md` (T4.1, review T4.3 aprovado),
-`artifacts/phase-5/architecture/index.md` (T5.1) e
-`artifacts/phase-6/architecture/index.md` (T6.1, review T6.3 aprovado),
-`artifacts/phase-7/architecture/index.md` (T7.1) e
-`artifacts/phase-8/architecture/index.md` (T8.1).
-Namespace / base package / applicationId: `com.offlineworkout`. Sem pacote `domain`
-(Clean-lite: `ui -> viewmodel -> data/repository -> data/local`).
+App de treino **offline** em Kotlin + Jetpack Compose. Sem conta, sem rede, sem nuvem.
+Crie treinos, monte exercícios de três tipos, execute com cronômetro de descanso que
+sobrevive à tela bloqueada, acompanhe evolução e faça backup local em JSON.
+
+Módulo único, Clean-lite **sem `domain`**: `ui → viewmodel → data/repository → data/local`.
+Namespace / base package / applicationId: `com.offlineworkout`. Room v1 com `exportSchema`,
+sem `fallbackToDestructiveMigration`. **477 testes, 0 falhas.**
+
+## O app
+
+Cinco telas, uma para cada verbo:
+
+| Tela | Rota | O que faz |
+|---|---|---|
+| Lista | `workouts` | Escolhe entre Executar, Editar, Histórico, Backup; cria treino |
+| Editor | `workouts/new`, `workouts/{id}/edit` | Cadastra exercícios, move ordem, define descanso |
+| Execução | `workouts/{id}/execute` | Séries, descanso, total da sessão — em modo performance |
+| Histórico | `workouts/{id}/history?exerciseId=` | Gráfico de evolução em Canvas + tabela |
+| Backup | `backup` | Exporta, compartilha, importa (substitui tudo) |
+
+Três tipos de exercício: **Séries** (reps + kg), **Tempo** (segundos) e
+**Distância/Tempo** (metros + segundos). O descanso roda em `ForegroundService` com
+`specialUse`, sobrevive a tela bloqueada e morre de processo, e avisa por som e vibração
+uma única vez.
+
+## Build
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew :app:lintDebug
+./gradlew :app:testDebugUnitTest
+```
+
+JDK 17, `compileSdk`/`targetSdk` 35, `minSdk` 26. Versões fixas em
+`gradle/libs.versions.toml`.
+
+### Release assinado
+
+A keystore fica **fora do repositório**. Forneça os quatro valores:
+
+```bash
+./gradlew :app:assembleRelease   # exige os quatro valores; falha alto sem eles
+```
+
+Sem esses valores, `assembleDebug`/`lintDebug`/`testDebugUnitTest` funcionam normalmente e
+**qualquer caminho que produza artefato de release falha com mensagem explícita**.
+
+> Ativar R8 no futuro exige reexecutar a suíte inteira: `UiBoundaryTest` e
+> `RepositoryBoundaryTest` resolvem classes por nome via reflexão, e minificar renomeia o
+> que elas procuram.
+
+## Decisões de produto
+
+- **Código de treino é livre** — quantos treinos o usuário quiser. A/B/C é caso particular.
+- **Auto Backup do sistema desligado** (`allowBackup="false"`): o único backup é o manual
+  local (tela `backup`), por decisão explícita. Sem criptografia, sem nuvem.
+- **Ordenação alfabética por `code`**, definida em um único lugar (o repositório).
+
+## Pendências conhecidas
+
+- **Sem ícone** — não há `mipmap`; a tela de detalhes usa o ícone genérico do sistema.
+- **`targetSdk` 35** — a exigência vigente da loja é externa e datada.
+- **Metade do gate de release** — a assinatura depende de credencial externa.
+- **Não verificado em aparelho**: gráfico do histórico com dados, anúncio falado do
+  cronômetro (o emulador não tem TTS) e `RestTimerService` com tela bloqueada.
+- **Literais pré-existentes** em `MissingDestinationScreen`, `HistoryChart`, `LoadingBlock`
+  e nos avisos dos ViewModels — migrá-los exigiria trocar contrato de UI/VM.
+
+## Histórico de desenvolvimento
+
+O projeto foi construído por um pipeline de agentes (arquitetura → desenvolvimento →
+revisão visual em emulador → revisão de código), com specs e relatórios de revisão a cada
+fase. **Esse histórico vive fora do repositório**, no Traycer do projeto — por isso as
+referências a `artifacts/...` no restante deste README não são caminhos deste repo.
+
+Os 20 commits do redesign de UI estão no histórico do git e são legíveis lote a lote.
 
 ## Estrutura
 
@@ -867,8 +932,8 @@ UI. Números em um device real ainda não medidos (A-8).
 
 ## T9.2 — Lote 0 do handoff (D-1, D-2, D-3, R-6)
 
-Decisões de produto registradas em `artifacts/phase-9/architecture/index.md`
-(seção "Decisões de produto registradas"). As três **removem** restrições que
+Decisões de produto registradas no artefato de arquitetura da fase 9 (fora do repo —
+ver "Histórico de desenvolvimento"). As três **removem** restrições que
 nasceram da ausência do `Tasks.md`; nenhuma adiciona dependência, tabela, rota
 ou tela, e nenhuma spec de produto das Fases 1–8 foi reescrita.
 
