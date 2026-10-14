@@ -14,7 +14,7 @@ Cinco telas, uma para cada verbo:
 
 | Tela | Rota | O que faz |
 |---|---|---|
-| Lista | `workouts` | Escolhe entre Executar, Editar, Histórico, Backup; cria treino |
+| Lista | `workouts` | Executa pelo card; `Editar`/`Histórico` por botão; `Criar`/`Backup` no topo |
 | Editor | `workouts/new`, `workouts/{id}/edit` | Cadastra exercícios, move ordem, define descanso |
 | Execução | `workouts/{id}/execute` | Séries, descanso, total da sessão — em modo performance |
 | Histórico | `workouts/{id}/history?exerciseId=` | Gráfico de evolução em Canvas + tabela |
@@ -24,6 +24,28 @@ Três tipos de exercício: **Séries** (reps + kg), **Tempo** (segundos) e
 **Distância/Tempo** (metros + segundos). O descanso roda em `ForegroundService` com
 `specialUse`, sobrevive a tela bloqueada e morre de processo, e avisa por som e vibração
 uma única vez.
+
+## Telas
+
+Capturas reais do app em execução, no tema claro (e uma no escuro).
+
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshots/01-lista-light.png" alt="Lista de treinos"><br><sub>Lista: o card abre a execução; Criar e Backup no topo</sub></td>
+<td width="33%"><img src="docs/screenshots/02-execucao-light.png" alt="Execução do treino"><br><sub>Execução: séries, reps, kg e total da sessão</sub></td>
+<td width="33%"><img src="docs/screenshots/04-descanso-countdown-light.png" alt="Cronômetro de descanso"><br><sub>Descanso com contagem regressiva</sub></td>
+</tr>
+<tr>
+<td width="33%"><img src="docs/screenshots/05-finalizar-confirmacao-light.png" alt="Confirmação de finalização"><br><sub>Confirmação ao finalizar com descanso ativo</sub></td>
+<td width="33%"><img src="docs/screenshots/07-historico-light.png" alt="Histórico de um exercício"><br><sub>Histórico por exercício, agrupado por dia</sub></td>
+<td width="33%"><img src="docs/screenshots/08-editor-light.png" alt="Editor de treino"><br><sub>Editor: ordem dos exercícios e descanso</sub></td>
+</tr>
+<tr>
+<td width="33%"><img src="docs/screenshots/09-editor-tipos-light.png" alt="Seletor de tipos de exercício"><br><sub>Os três tipos explicados no próprio app</sub></td>
+<td width="33%"><img src="docs/screenshots/10-backup-light.png" alt="Tela de backup"><br><sub>Backup: exportar e importar, com aviso destrutivo</sub></td>
+<td width="33%"><img src="docs/screenshots/11-lista-dark.png" alt="Lista no tema escuro"><br><sub>Lista no tema escuro</sub></td>
+</tr>
+</table>
 
 ## Build
 
