@@ -410,7 +410,13 @@ private fun StartRestButton(specRestSeconds: Int, specName: String, onStartRest:
             .semantics { contentDescription = cd }
             .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
     ) {
-        Text(text = stringResource(R.string.execution_start_rest))
+        // E-5: uma linha com ellipsis em vez de quebrar no meio da palavra.
+        Text(
+            text = stringResource(R.string.execution_start_rest),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            softWrap = false
+        )
     }
 }
 

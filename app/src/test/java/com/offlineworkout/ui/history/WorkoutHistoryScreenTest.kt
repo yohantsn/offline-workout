@@ -406,11 +406,11 @@ class WorkoutHistoryScreenTest {
 
     @Test
     fun rows_group_by_day_with_headers() {
-        // Dois dias distintos: 1_700_000_000_000L e +1 dia. A lista é lazy,
-        // então cada cabeçalho é provado enquanto está na dobra: o texto de
-        // data exata só existe no DayHeader (as linhas trazem data+hora).
+        // Dois dias distintos (25 h depois: outro dia E outra hora).
+        // A lista é lazy, então cada cabeçalho é provado enquanto está na
+        // dobra: o texto de data exata só existe no DayHeader.
         val day1 = 1_700_000_000_000L
-        val day2 = day1 + 86_400_000L
+        val day2 = day1 + 90_000_000L
         idleScreen(
             ready(
                 rows = listOf(execution(11L, day2), execution(10L, day1)),
@@ -420,5 +420,7 @@ class WorkoutHistoryScreenTest {
         composeTestRule.onNodeWithText(formatHistoryDate(day2)).assertExists()
         composeTestRule.onNodeWithTag("historyList").performScrollToIndex(6)
         composeTestRule.onNodeWithText(formatHistoryDate(day1)).assertExists()
+        // H-3: nas linhas agrupadas, só a hora (o dia está no cabeçalho).
+        composeTestRule.onNodeWithText(formatHistoryTime(day1)).assertExists()
     }
 }

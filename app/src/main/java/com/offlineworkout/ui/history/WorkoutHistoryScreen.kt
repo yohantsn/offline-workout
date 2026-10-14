@@ -122,9 +122,23 @@ fun WorkoutHistoryScreen(
     }
 }
 
-// System-legible date/time; tests assert structure, not exact locale text.
+// System-legible date/time em pt-BR FIXO (H-2): a mesma decisão do backup —
+// nunca depende do locale do aparelho para não variar entre testes e uso.
+// Tests assert structure, not exact locale text.
 fun formatHistoryTimestamp(wallClockMs: Long): String =
-    DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(wallClockMs))
+    DateFormat.getDateTimeInstance(
+        DateFormat.SHORT,
+        DateFormat.SHORT,
+        java.util.Locale.forLanguageTag("pt-BR")
+    ).format(Date(wallClockMs))
+
+// Só hora (H-3): nas linhas agrupadas por DayHeader o dia já está no
+// cabeçalho — repetir a data em cada card é ruído.
+fun formatHistoryTime(wallClockMs: Long): String =
+    DateFormat.getTimeInstance(
+        DateFormat.SHORT,
+        java.util.Locale.forLanguageTag("pt-BR")
+    ).format(Date(wallClockMs))
 
 @Composable
 private fun LoadingBlock(modifier: Modifier = Modifier) {
@@ -592,7 +606,7 @@ private fun HistoryRow(row: ExerciseExecutionView) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = formatHistoryTimestamp(row.performedAt),
+                text = formatHistoryTime(row.performedAt),
                 style = MaterialTheme.typography.titleMedium
             )
             if (row.sets.isNotEmpty()) {

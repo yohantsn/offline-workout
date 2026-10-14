@@ -285,8 +285,11 @@ private fun PreviewSheet(
                     )
                 }
             }
+            // B-7: gap 4 dp + sem padding lateral — ~20 dp a mais por caixa
+            // para o rótulo não quebrar no meio da palavra a 2.0×. Nunca
+            // truncar (requisito do projeto); se ainda não couber, grid 2×2.
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 CountBox(
@@ -360,10 +363,8 @@ private fun PreviewSheet(
 
 // Contagem compacta da prévia (wireframe §3.5: 4 caixas em fileira, número
 // tabular). Screen-private: não é componente compartilhado.
-// B-7 ANOTADO p/ ui-reviewer: a 2.0× o rótulo pode quebrar no meio da palavra
-// em caixa de ~80 dp. NÃO truncar com ellipsis (violaria "texto grande não
-// trunca", requisito do projeto) — grid 2×2 ou hifenização ficam para decisão
-// com captura real.
+// B-7: gap/padding reduzidos para caber a 2.0× sem truncar (requisito do
+// projeto); se ainda quebrar, grid 2×2.
 @Composable
 private fun CountBox(label: String, value: String, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
@@ -374,7 +375,7 @@ private fun CountBox(label: String, value: String, modifier: Modifier = Modifier
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp)
+            modifier = Modifier.padding(horizontal = 0.dp, vertical = 10.dp)
         ) {
             Text(
                 text = value,

@@ -193,7 +193,10 @@ private fun XDateLabels(minTs: Long, maxTs: Long) {
 }
 
 fun formatHistoryDate(wallClockMs: Long): String =
-    DateFormat.getDateInstance(DateFormat.SHORT).format(Date(wallClockMs))
+    DateFormat.getDateInstance(
+        DateFormat.SHORT,
+        java.util.Locale.forLanguageTag("pt-BR")
+    ).format(Date(wallClockMs))
 
 // Ponto de pico da métrica principal (maior valor; primeiro em empate).
 // Puro e unit-testado; o desenho só o realça, a leitura exata está na tabela.
