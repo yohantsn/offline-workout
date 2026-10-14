@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -62,6 +63,7 @@ import com.offlineworkout.ui.components.TypeBadgeTone
 import com.offlineworkout.ui.theme.LocalSuccessColors
 import com.offlineworkout.viewmodel.ExecutionError
 import com.offlineworkout.viewmodel.ExecutionExerciseState
+import com.offlineworkout.viewmodel.SESSION_RESTORED_NOTICE_KEY
 import com.offlineworkout.viewmodel.SeriesSetInputState
 import com.offlineworkout.viewmodel.WorkoutExecutionUiState
 import kotlinx.coroutines.delay
@@ -251,6 +253,10 @@ private fun WorkoutSessionState.isForeign(workoutId: Long): Boolean =
     (status is WorkoutSessionStatus.Running || status is WorkoutSessionStatus.Paused) &&
         this.workoutId != null && this.workoutId != workoutId
 
+// R-1: acima desta escala os botões de sessão empilham (1.3× verificado ok;
+// a 2.0× o "Descanso" quebrava).
+private const val SESSION_ACTIONS_STACK_FONT_SCALE = 1.3f
+
 @Composable
 private fun LoadingBlock(modifier: Modifier = Modifier) {
     val loadingDescription = stringResource(R.string.execution_loading_cd)
@@ -371,16 +377,37 @@ private fun FooterActions(
                                 .semantics { contentDescription = completeCd }
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SecondaryButton(
-                            text = stringResource(R.string.execution_complete_exercise),
-                            onClick = { onCompleteExercise(current.spec.id) }
-                        )
-                        StartRestButton(
-                            specRestSeconds = current.spec.restSeconds,
-                            specName = current.spec.name,
-                            onStartRest = { onStartRest(current.spec.id) }
-                        )
+                    // R-1: acima de certa escala de fonte os dois botões
+                    // empilham em coluna (lado a lado o "Descanso" virava
+                    // "De…"). 48 dp nos dois eixos nos dois arranjos.
+                    val stackActions = LocalDensity.current.fontScale >
+                        SESSION_ACTIONS_STACK_FONT_SCALE
+                    if (stackActions) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SecondaryButton(
+                                text = stringResource(R.string.execution_complete_exercise),
+                                onClick = { onCompleteExercise(current.spec.id) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            StartRestButton(
+                                specRestSeconds = current.spec.restSeconds,
+                                specName = current.spec.name,
+                                onStartRest = { onStartRest(current.spec.id) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SecondaryButton(
+                                text = stringResource(R.string.execution_complete_exercise),
+                                onClick = { onCompleteExercise(current.spec.id) }
+                            )
+                            StartRestButton(
+                                specRestSeconds = current.spec.restSeconds,
+                                specName = current.spec.name,
+                                onStartRest = { onStartRest(current.spec.id) }
+                            )
+                        }
                     }
                 }
                 else -> {
@@ -401,12 +428,17 @@ private fun FooterActions(
 }
 
 @Composable
-private fun StartRestButton(specRestSeconds: Int, specName: String, onStartRest: () -> Unit) {
+private fun StartRestButton(
+    specRestSeconds: Int,
+    specName: String,
+    onStartRest: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val cd = stringResource(R.string.execution_start_rest_cd, specName)
     OutlinedButton(
         onClick = onStartRest,
         enabled = specRestSeconds > 0,
-        modifier = Modifier
+        modifier = modifier
             .semantics { contentDescription = cd }
             .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
     ) {
@@ -501,9 +533,16 @@ private fun ReadyContent(
                     .semantics { liveRegion = LiveRegionMode.Polite }
             )
         }
-        if (state.notice != null) {
+        val noticeText = state.notice?.let { notice ->
+            if (notice == SESSION_RESTORED_NOTICE_KEY) {
+                stringResource(R.string.execution_session_restored)
+            } else {
+                notice
+            }
+        }
+        if (noticeText != null) {
             Text(
-                text = state.notice,
+                text = noticeText,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier
                     .padding(horizontal = 16.dp)

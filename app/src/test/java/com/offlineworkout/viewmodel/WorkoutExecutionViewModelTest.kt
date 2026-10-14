@@ -100,7 +100,7 @@ class WorkoutExecutionViewModelTest {
             )
         )
         val vm = WorkoutExecutionViewModel(7L, repo, FakeHistory(), FakeTimer(), session)
-        assertEquals("Sessão anterior retomada", awaitReady(vm).notice)
+        assertEquals(SESSION_RESTORED_NOTICE_KEY, awaitReady(vm).notice)
     }
 
     @Test

@@ -211,6 +211,7 @@
     <string name="execution_retry">Tentar novamente</string>
     <string name="execution_back">Voltar para treinos</string>
     <string name="execution_err_save">Não foi possível salvar. Verifique os campos.</string>
+    <string name="execution_session_restored">Sessão anterior retomada</string>
     <string name="execution_err_latest">Não foi possível ler o histórico anterior.</string>
     <string name="execution_err_timer">Descanso indisponível.</string>
 </resources>

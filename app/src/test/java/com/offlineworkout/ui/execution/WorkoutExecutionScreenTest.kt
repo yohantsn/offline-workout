@@ -27,6 +27,7 @@ import com.offlineworkout.data.timer.RestTimerSnapshot
 import com.offlineworkout.data.timer.RestTimerStatus
 import com.offlineworkout.viewmodel.ExecutionError
 import com.offlineworkout.viewmodel.ExecutionExerciseState
+import com.offlineworkout.viewmodel.SESSION_RESTORED_NOTICE_KEY
 import com.offlineworkout.viewmodel.SeriesSetInputState
 import com.offlineworkout.viewmodel.WorkoutExecutionUiState
 import com.offlineworkout.data.model.WorkoutSummary
@@ -145,29 +146,40 @@ class WorkoutExecutionScreenTest {
         val distanceInputs = mutableListOf<String>()
     }
 
-    private fun idleScreen(state: WorkoutExecutionUiState, calls: Calls = Calls()) {
+    private fun idleScreen(
+        state: WorkoutExecutionUiState,
+        calls: Calls = Calls(),
+        fontScale: Float = 1f
+    ) {
         composeTestRule.setContent {
-            WorkoutExecutionScreen(
-                state = state,
-                onSelectExercise = { calls.selected.add(it) },
-                onNextExercise = { calls.selected.add(-1L) },
-                onPreviousExercise = { calls.selected.add(-2L) },
-                onRepsChanged = { _, _, value -> calls.repsInputs.add(value) },
-                onWeightChanged = { _, _, _ -> },
-                onDurationChanged = { _, value -> calls.durationInputs.add(value) },
-                onDistanceChanged = { _, value -> calls.distanceInputs.add(value) },
-                onCompleteSeriesSet = { id, set -> calls.completedSets.add(id to set) },
-                onCompleteExercise = { calls.completedExercises.add(it) },
-                onStartRest = { calls.started.add(it) },
-                onCancelRest = { calls.cancels += 1 },
-                onHistorySelected = { calls.historyOpened += 1 },
-                onPauseSession = { calls.paused += 1 },
-                onResumeSession = { calls.resumed += 1 },
-                onFinishWorkout = { calls.finished += 1 },
-                onRetry = { calls.retries += 1 },
-                onNoticeShown = { calls.noticed += 1 },
-                onBack = { calls.backed += 1 }
-            )
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+                    density = composeTestRule.density.density,
+                    fontScale = fontScale
+                )
+            ) {
+                WorkoutExecutionScreen(
+                    state = state,
+                    onSelectExercise = { calls.selected.add(it) },
+                    onNextExercise = { calls.selected.add(-1L) },
+                    onPreviousExercise = { calls.selected.add(-2L) },
+                    onRepsChanged = { _, _, value -> calls.repsInputs.add(value) },
+                    onWeightChanged = { _, _, _ -> },
+                    onDurationChanged = { _, value -> calls.durationInputs.add(value) },
+                    onDistanceChanged = { _, value -> calls.distanceInputs.add(value) },
+                    onCompleteSeriesSet = { id, set -> calls.completedSets.add(id to set) },
+                    onCompleteExercise = { calls.completedExercises.add(it) },
+                    onStartRest = { calls.started.add(it) },
+                    onCancelRest = { calls.cancels += 1 },
+                    onHistorySelected = { calls.historyOpened += 1 },
+                    onPauseSession = { calls.paused += 1 },
+                    onResumeSession = { calls.resumed += 1 },
+                    onFinishWorkout = { calls.finished += 1 },
+                    onRetry = { calls.retries += 1 },
+                    onNoticeShown = { calls.noticed += 1 },
+                    onBack = { calls.backed += 1 }
+                )
+            }
         }
     }
 
@@ -344,6 +356,28 @@ class WorkoutExecutionScreenTest {
             titleBounds.top < backBounds.bottom &&
             titleBounds.bottom > backBounds.top
         assertTrue("title $titleBounds overlaps back $backBounds", !overlaps)
+    }
+
+    @Test
+    fun restored_notice_key_resolves_to_text() {
+        // C-2: o VM emite chave; a UI resolve para strings.xml.
+        idleScreen(ready(notice = SESSION_RESTORED_NOTICE_KEY))
+        composeTestRule.onNodeWithText("Sessão anterior retomada").assertExists()
+    }
+
+    @Test
+    fun session_actions_stack_vertically_at_large_font_scale() {
+        // R-1: a 2.0× os botões empilham (lado a lado o "Descanso" virava
+        // "De…"). Empilhado = Descanso começa onde Concluir termina.
+        idleScreen(ready(), fontScale = 2f)
+        val concluir = composeTestRule.onNodeWithText("Concluir exercício")
+            .fetchSemanticsNode().boundsInRoot
+        val descanso = composeTestRule.onNodeWithContentDescription("Iniciar descanso de Squat")
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue(
+            "buttons overlap vertically: concluir $concluir descanso $descanso",
+            descanso.top >= concluir.bottom
+        )
     }
 
     @Test

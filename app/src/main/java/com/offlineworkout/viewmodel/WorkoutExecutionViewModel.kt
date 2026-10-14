@@ -43,6 +43,11 @@ import kotlinx.coroutines.launch
 // write per concluded exercise, the T5.3 rest timer and the session total.
 // Never touches Room/Service/DAOs; never counts time; never writes history
 // except through ExerciseHistoryRepository record* calls.
+
+// Chave do aviso de sessão restaurada (C-2/i18n): o valor legível mora em
+// strings.xml (`execution_session_restored`); a UI resolve. Literais dos
+// demais avisos precedem este padrão.
+const val SESSION_RESTORED_NOTICE_KEY = "session_restored"
 sealed interface WorkoutExecutionUiState {
     data object Loading : WorkoutExecutionUiState
     data class Ready(
@@ -195,7 +200,10 @@ class WorkoutExecutionViewModel(
             preexisting.workoutId == workoutId &&
             preexisting.elapsedSeconds > 0
         ) {
-            noticeFlow.value = "Sessão anterior retomada"
+            // Chave, não literal (C-2/i18n): ViewModel não tem Context; a UI
+            // resolve para strings.xml. Literais de outros avisos precedem
+            // este padrão e ficam como estão.
+            noticeFlow.value = SESSION_RESTORED_NOTICE_KEY
         }
         viewModelScope.launch {
             selectedId.flatMapLatest { id ->

@@ -285,11 +285,11 @@ private fun PreviewSheet(
                     )
                 }
             }
-            // B-7: gap 4 dp + sem padding lateral — ~20 dp a mais por caixa
-            // para o rótulo não quebrar no meio da palavra a 2.0×. Nunca
-            // truncar (requisito do projeto); se ainda não couber, grid 2×2.
+            // B-7: gap 2 dp + sem padding lateral — o suficiente para
+            // "exercícios" caber a 2.0× sem truncar (requisito do projeto);
+            // se ainda quebrar, grid 2×2.
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 CountBox(
