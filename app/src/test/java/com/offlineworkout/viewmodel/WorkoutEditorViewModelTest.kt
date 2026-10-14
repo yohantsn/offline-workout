@@ -362,6 +362,9 @@ class WorkoutEditorViewModelTest {
             return createResult ?: Result.success(99L)
         }
 
+        override suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
+            throw UnsupportedOperationException("not used")
+
         override suspend fun updateWorkoutWithExercises(workoutId: Long, input: WorkoutAggregateDraft): Result<Unit> {
             writes.add(input)
             return Result.success(Unit)

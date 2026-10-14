@@ -3,8 +3,10 @@ package com.offlineworkout.data.repository
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.offlineworkout.data.local.AppDatabase
+import com.offlineworkout.data.model.ExerciseAggregateDraft
 import com.offlineworkout.data.model.ExerciseInput
 import com.offlineworkout.data.model.ExerciseType
+import com.offlineworkout.data.model.WorkoutAggregateDraft
 import com.offlineworkout.data.model.WorkoutDraft
 import com.offlineworkout.data.model.WorkoutUpdate
 import kotlinx.coroutines.CancellationException
@@ -232,5 +234,55 @@ class RoomWorkoutRepositoryTest {
     fun cancellation_is_rethrown_not_wrapped() = runTest {
         val cancelling = RoomWorkoutRepository(db, clock = { throw CancellationException("cancelled") })
         cancelling.createWorkout(WorkoutDraft("A", "A"))
+    }
+
+    private fun seriesAggregate(name: String = "Squat") = ExerciseAggregateDraft(
+        id = null, name = name, type = ExerciseType.SERIES, restSeconds = 90,
+        targetSets = 3, targetReps = 10, targetWeightKg = 60.0,
+        targetDurationSeconds = null, targetDistanceMeters = null
+    )
+
+    @Test
+    fun batch_create_preserves_order_and_ids() = runTest {
+        val inputs = listOf(
+            WorkoutAggregateDraft("A", "Wa", listOf(seriesAggregate())),
+            WorkoutAggregateDraft("B", "Wb", listOf(seriesAggregate()))
+        )
+        val ids = repo.createWorkoutsWithExercises(inputs).getOrThrow()
+        assertEquals(listOf(1L, 2L), ids)
+        assertEquals(2, repo.observeWorkouts().first().size)
+    }
+
+    @Test
+    fun batch_rollback_when_later_item_conflicts() = runTest {
+        val inputs = listOf(
+            WorkoutAggregateDraft("A", "Wa", listOf(seriesAggregate())),
+            WorkoutAggregateDraft("A", "Wb", listOf(seriesAggregate()))
+        )
+        val res = repo.createWorkoutsWithExercises(inputs)
+        assertTrue(res.exceptionOrNull() is RepositoryFailure.Conflict)
+        assertTrue(repo.observeWorkouts().first().isEmpty())
+    }
+
+    @Test
+    fun batch_empty_list_succeeds() = runTest {
+        val ids = repo.createWorkoutsWithExercises(emptyList()).getOrThrow()
+        assertTrue(ids.isEmpty())
+    }
+
+    @Test
+    fun batch_rejects_empty_workout() = runTest {
+        val inputs = listOf(WorkoutAggregateDraft("A", "Wa", emptyList()))
+        val res = repo.createWorkoutsWithExercises(inputs)
+        assertTrue(res.exceptionOrNull() is RepositoryFailure.Validation)
+        assertTrue(repo.observeWorkouts().first().isEmpty())
+    }
+
+    @Test
+    fun batch_rejects_over_limit() = runTest {
+        val inputs = (1..21).map { WorkoutAggregateDraft("W$it", "Name", listOf(seriesAggregate())) }
+        val res = repo.createWorkoutsWithExercises(inputs)
+        assertTrue(res.exceptionOrNull() is RepositoryFailure.Validation)
+        assertTrue(repo.observeWorkouts().first().isEmpty())
     }
 }
