@@ -64,13 +64,16 @@ class RoomWorkoutBatchTest {
         assertEquals(3L, ids[2])
         val workouts = repo.observeWorkouts().first()
         assertEquals(3, workouts.size)
-        // exercises for first workout in order 0,1,2
+        // exercises for first workout in order 0,1
         val ex0 = repo.observeExercises(ids[0]).first()
         assertEquals(listOf(0, 1), ex0.map { it.position })
     }
 
     @Test
-    fun batch_failure_on_third_rolls_back_everything() = runTest {
+    fun batch_invalid_draft_fails_before_any_write() = runTest {
+        // A falha (targetSets = 0) e capturada na validacao pre-transacao: nada e
+        // escrito, portanto o banco fica intacto justamente porque a transacao
+        // nunca comecou.
         val beforeWorkouts = repo.observeWorkouts().first().size
         val beforeExercises = db.exerciseDao().getAllOrdered().size
         val inputs = listOf(
@@ -110,6 +113,8 @@ class RoomWorkoutBatchTest {
 
     @Test
     fun batch_duplicate_code_in_list_conflict() = runTest {
+        // Este e o teste que prova rollback de verdade: o throw acontece dentro
+        // da transacao, depois de A ter sido inserido, e o banco fica vazio.
         val inputs = listOf(
             WorkoutAggregateDraft("A", "Wa", listOf(seriesDraft())),
             WorkoutAggregateDraft("A", "Wb", listOf(seriesDraft()))
