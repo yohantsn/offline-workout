@@ -27,9 +27,6 @@ class RoomWorkoutRepository(
     private val db: AppDatabase,
     private val clock: () -> Long = { System.currentTimeMillis() }
 ) : WorkoutRepository {
-    companion object {
-        const val IMPORT_MAX_WORKOUTS = 20
-    }
 
     // T9.3 (R-6): single ordering source. Alphabetic by `code`, which is
     // Kotlin String comparison (UTF-16 code unit), so it is case- and
