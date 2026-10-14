@@ -179,8 +179,10 @@ T4.3 (formulário reutilizável) ─┐
                                └─▶ IMP-6.1 / IMP-6.2 (UI de importação)
 ```
 
-T1.3, T2.4 e T4.3 são **independentes entre si** e podem ser executadas em paralelo por
-agentes diferentes.
+T1.3 e T4.3 são **independentes entre si** (dados vs. editor) e podem ser executadas em
+paralelo. **T2.4 depende de T1.3** — a interface expõe o método cuja implementação em Room
+entrega T1.3 — e não deve rodar em paralelo com ela, sob pena de dois agentes editarem
+`RoomWorkoutRepository` ao mesmo tempo.
 
 ## Critérios de aceite comuns às três tarefas
 
