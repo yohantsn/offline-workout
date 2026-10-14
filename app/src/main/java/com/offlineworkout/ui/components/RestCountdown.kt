@@ -60,6 +60,10 @@ fun RestCountdown(
                 style = MaterialTheme.typography.displayLarge,
                 color = scheme.onTertiaryContainer
             )
+            // E-7 ANOTADO p/ decisão de produto: preenchimento tertiary sobre
+            // tertiaryContainer mede 2.87:1 (< 3:1 de gráfico). As cores são
+            // da spec — NÃO mudar aqui; o número tabular ao lado é a leitura
+            // alternativa, nunca só cor.
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth(),

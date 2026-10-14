@@ -82,6 +82,50 @@ class WorkoutExecutionViewModelTest {
     }
 
     @Test
+    fun restored_session_announces_resume_once() = runTest {
+        // E-6: sessão pré-existente NESTE treino com tempo acumulado foi
+        // restaurada — anuncia uma vez, sem mudar o cronômetro.
+        setTestMain()
+        val repo = FakeWorkoutRepository()
+        repo.workout.value = WorkoutSummary(7L, "A", "Alpha", 1L)
+        repo.exercises.value = listOf(seriesSpec(1L, "One", 0))
+        val session = FakeSession(
+            WorkoutSessionState(
+                status = WorkoutSessionStatus.Running(7L),
+                workoutId = 7L,
+                elapsedSeconds = 4000L,
+                startedAtWallClockMs = 1L,
+                accumulatedMs = 4_000_000L,
+                lastResumedAtWallClockMs = 1L
+            )
+        )
+        val vm = WorkoutExecutionViewModel(7L, repo, FakeHistory(), FakeTimer(), session)
+        assertEquals("Sessão anterior retomada", awaitReady(vm).notice)
+    }
+
+    @Test
+    fun fresh_session_announces_nothing() = runTest {
+        setTestMain()
+        val repo = FakeWorkoutRepository()
+        repo.workout.value = WorkoutSummary(7L, "A", "Alpha", 1L)
+        repo.exercises.value = listOf(seriesSpec(1L, "One", 0))
+        val vm = WorkoutExecutionViewModel(
+            7L, repo, FakeHistory(), FakeTimer(),
+            FakeSession(
+                WorkoutSessionState(
+                    status = WorkoutSessionStatus.Idle,
+                    workoutId = null,
+                    elapsedSeconds = 0L,
+                    startedAtWallClockMs = 0L,
+                    accumulatedMs = 0L,
+                    lastResumedAtWallClockMs = 0L
+                )
+            )
+        )
+        assertNull(awaitReady(vm).notice)
+    }
+
+    @Test
     fun timer_ticks_keep_the_exercise_entries_identical() = runTest {
         // T9.2 (R-15b): the rest engine writes the remaining seconds once a
         // second for the whole rest period. If the timer tick produced new

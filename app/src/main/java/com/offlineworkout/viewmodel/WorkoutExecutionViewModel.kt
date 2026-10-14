@@ -184,7 +184,19 @@ class WorkoutExecutionViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutExecutionUiState.Loading)
 
     init {
+        val preexisting = session.state.value
         session.startOrResume(workoutId)
+        // E-6: se já havia sessão NESTE treino com tempo acumulado, ela foi
+        // restaurada (processo morto ou ida-e-volta) — anuncia uma vez, sem
+        // mudar a semântica do cronômetro. Estrangeira nunca (tem banner
+        // próprio); zerada nunca (nada a explicar).
+        if ((preexisting.status is WorkoutSessionStatus.Running ||
+                preexisting.status is WorkoutSessionStatus.Paused) &&
+            preexisting.workoutId == workoutId &&
+            preexisting.elapsedSeconds > 0
+        ) {
+            noticeFlow.value = "Sessão anterior retomada"
+        }
         viewModelScope.launch {
             selectedId.flatMapLatest { id ->
                 if (id == null) {
