@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -366,17 +368,6 @@ private fun EditorForm(
                 }
             }
         }
-        if (showPicker) {
-            item(key = "picker") {
-                ExerciseTypePicker(
-                    onPick = {
-                        onPickerVisibilityChange(false)
-                        onAddExercise(it)
-                    },
-                    onDismiss = { onPickerVisibilityChange(false) }
-                )
-            }
-        }
         if (saving) {
             item(key = "saving") {
                 Text(
@@ -393,6 +384,19 @@ private fun EditorForm(
         DiscardDialog(
             onConfirm = onConfirmDiscard,
             onDismiss = onDismissDiscard
+        )
+    }
+    // N-1: o seletor era um item no FIM da LazyColumn — invisível com 8+
+    // exercícios ("Adicionar" sem retorno). Agora é overlay (AlertDialog, não
+    // sheet: o Robolectric não entrega toque à janela do sheet, e o diálogo
+    // tem cliques comprovados). Aparece onde o dedo está, com scrim de foco.
+    if (showPicker) {
+        TypePickerDialog(
+            onPick = {
+                onPickerVisibilityChange(false)
+                onAddExercise(it)
+            },
+            onDismiss = { onPickerVisibilityChange(false) }
         )
     }
 }
@@ -424,6 +428,30 @@ private fun exerciseSummary(exercise: ExerciseFormState): String {
     }
     return parts.ifEmpty { listOf(stringResource(R.string.numeric_empty)) }
         .joinToString(" · ")
+}
+
+@Composable
+private fun TypePickerDialog(onPick: (ExerciseType) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.editor_add)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ExerciseTypePicker(onPick = onPick)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            ) {
+                Text(text = stringResource(R.string.editor_close))
+            }
+        }
+    )
 }
 
 @Composable

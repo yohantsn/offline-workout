@@ -145,7 +145,6 @@
     <string name="editor_move_down_cd">Mover %1$s para baixo</string>
     <string name="editor_expand_cd">Expandir %1$s</string>
     <string name="editor_collapse_cd">Recolher %1$s</string>
-    <string name="editor_type_title">Que tipo de exercício?</string>
     <string name="editor_type_series">Séries</string>
     <string name="editor_type_timed">Tempo</string>
     <string name="editor_type_distance">Distância/Tempo</string>

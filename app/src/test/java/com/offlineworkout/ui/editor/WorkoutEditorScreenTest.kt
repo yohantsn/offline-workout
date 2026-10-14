@@ -118,6 +118,18 @@ class WorkoutEditorScreenTest {
     }
 
     @Test
+    fun picker_opens_visible_with_long_list() {
+        // N-1: o seletor era o último item da LazyColumn — invisível com 8+
+        // exercícios. Como overlay, aparece sem rolar até o fim.
+        val many = (1..8).map { seriesExercise(clientId = "new-$it").copy(nameText = "Exercício $it") }
+        idleScreen(WorkoutEditorUiState.Ready(blankForm().copy(exercises = many)))
+        composeTestRule.onNodeWithText("Adicionar exercício").performClick()
+        // Descrições só existem no diálogo (títulos repetem os badges).
+        composeTestRule.onNodeWithText("Repetições e peso, série por série.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Duração em segundos. Sem peso.").assertIsDisplayed()
+    }
+
+    @Test
     fun series_card_shows_discriminated_fields_with_units() {
         idleScreen(WorkoutEditorUiState.Ready(blankForm().copy(exercises = listOf(seriesExercise()))))
         // Colapsado por padrão: expandir primeiro; mover fica no resumo.
