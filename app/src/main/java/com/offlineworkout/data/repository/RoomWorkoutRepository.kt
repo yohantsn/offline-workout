@@ -171,6 +171,8 @@ class RoomWorkoutRepository(
         db.withTransaction {
             val ids = mutableListOf<Long>()
             inputs.forEachIndexed { wi, input ->
+                // UNIQUE(workouts.code) ja existe no schema; a checagem explicita
+                // aqui garante mensagem estavel/explicita e cobre duplicatas na lista.
                 if (db.workoutDao().countByCode(input.code) > 0) {
                     throw RepositoryFailure.Conflict("workout.code already exists")
                 }
@@ -192,15 +194,6 @@ class RoomWorkoutRepository(
             ids
         }
     }
-
-    suspend fun createWorkouts(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
-        createWorkoutsWithExercises(inputs)
-
-    suspend fun insertWorkouts(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
-        createWorkoutsWithExercises(inputs)
-
-    suspend fun createWorkoutAggregates(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
-        createWorkoutsWithExercises(inputs)
 
     override suspend fun updateWorkoutWithExercises(workoutId: Long, input: WorkoutAggregateDraft): Result<Unit> = write {
         validateWorkoutFields(input.code, input.name)?.let { throw it }
