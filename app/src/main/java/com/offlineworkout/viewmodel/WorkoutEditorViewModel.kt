@@ -18,10 +18,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
-// Re-export the extracted pure draft types so existing callers (and tests) keep
-// their viewmodel.* import paths. The implementation now lives in ui.draft.
-typealias EditorField = com.offlineworkout.ui.draft.EditorField
-typealias ExerciseFormState = com.offlineworkout.ui.draft.ExerciseFormState
+import com.offlineworkout.ui.draft.EditorField
+import com.offlineworkout.ui.draft.ExerciseFormState
 // T4.1: single editor for Create and Edit. Only the WorkoutRepository interface,
 // public models and the pure config cross the boundary — never persistence.
 enum class MoveDirection { UP, DOWN }

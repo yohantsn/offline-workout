@@ -33,6 +33,9 @@ data class WorkoutFormState(
 ) {
     fun validate(): Pair<Map<EditorField, String>, WorkoutAggregateDraft?> {
         val errors = mutableMapOf<EditorField, String>()
+        // T9.2 (D-1): mirror of RoomWorkoutRepository.validateWorkoutFields —
+        // `code` is free text, so only emptiness is rejected here. The unique
+        // index is what refuses a duplicate, reported as Conflict on the field.
         if (codeText.isBlank()) {
             errors.putIfAbsent(EditorField.WORKOUT_CODE, "Informe o código")
         }
