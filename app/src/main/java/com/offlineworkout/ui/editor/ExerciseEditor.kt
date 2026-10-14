@@ -14,8 +14,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.offlineworkout.R
 import com.offlineworkout.data.model.ExerciseType
-import com.offlineworkout.viewmodel.EditorField
-import com.offlineworkout.viewmodel.ExerciseFormState
+import com.offlineworkout.ui.draft.EditorField
+import com.offlineworkout.ui.draft.ExerciseFormState
 
 // Formulário do exercício expandido. Erro por campo (borda + mensagem
 // abaixo); erros de escopo de exercício (EXERCISE_NAME/REST_SECONDS/

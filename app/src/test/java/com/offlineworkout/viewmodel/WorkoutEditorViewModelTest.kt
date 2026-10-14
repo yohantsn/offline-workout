@@ -12,6 +12,7 @@ import com.offlineworkout.data.model.WorkoutUpdate
 import com.offlineworkout.data.repository.RepositoryException
 import com.offlineworkout.data.repository.RepositoryFailure
 import com.offlineworkout.data.repository.WorkoutRepository
+import com.offlineworkout.ui.draft.EditorField
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
