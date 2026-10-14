@@ -115,6 +115,8 @@
     <string name="history_retry">Tentar novamente</string>
     <string name="history_back">Voltar para treinos</string>
     <string name="history_empty">Sem execuções para este exercício</string>
+    <string name="history_pick_title">Escolha um exercício</string>
+    <string name="history_pick_text">Veja a evolução de carga, tempo ou distância.</string>
     <string name="history_stats_warning">Não foi possível carregar o resumo</string>
     <string name="history_page_error">Não foi possível carregar mais itens.</string>
     <string name="history_load_more">Carregar mais</string>

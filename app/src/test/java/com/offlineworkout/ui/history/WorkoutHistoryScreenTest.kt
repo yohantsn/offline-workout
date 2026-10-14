@@ -323,6 +323,19 @@ class WorkoutHistoryScreenTest {
     }
 
     @Test
+    fun unselected_shows_invite_instead_of_zero_values() {
+        // N-2: sem seleção não há de quem agregar — convite, nunca "0" nem
+        // a cópia de vazio do exercício.
+        idleScreen(
+            ready(selected = null, rows = emptyList(), chartData = null, statsData = null)
+        )
+        composeTestRule.onNodeWithText("Escolha um exercício").assertExists()
+        composeTestRule.onNodeWithText("Veja a evolução de carga, tempo ou distância.").assertExists()
+        composeTestRule.onAllNodesWithText("Sessões").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Sem execuções para este exercício").assertCountEquals(0)
+    }
+
+    @Test
     fun set_without_weight_never_prints_null() {
         // H-1: peso opcional — "sem peso", nunca a palavra "null".
         val noWeight = execution(10L, 2000L).copy(

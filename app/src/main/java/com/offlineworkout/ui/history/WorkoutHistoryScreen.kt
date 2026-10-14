@@ -185,11 +185,29 @@ private fun ReadyContent(
             )
         }
         item(key = "tiles") {
-            SummaryTiles(
-                stats = stats,
-                rows = rows,
-                type = state.chart?.type
-            )
+            // N-2: sem exercício selecionado não há de quem agregar — mostra
+            // convite (wireframe §3.4), nunca tiles zerados ("Sessões 0" para
+            // treino com histórico). Totais no nível do treino exigiriam
+            // agregação nova no DAO + campo no VM: pendência de decisão.
+            if (state.selectedExerciseId == null) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(R.string.history_pick_title),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = stringResource(R.string.history_pick_text),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                SummaryTiles(
+                    stats = stats,
+                    rows = rows,
+                    type = state.chart?.type
+                )
+            }
         }
         item(key = "summary") {
             // T9.2 (B-3 residual): with no stats the summary is still derived
@@ -225,12 +243,16 @@ private fun ReadyContent(
             }
         }
         if (rows.isEmpty()) {
-            item(key = "empty") {
-                Text(
-                    text = stringResource(R.string.history_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+            // N-2: "para este exercício" só quando HÁ exercício selecionado;
+            // sem seleção o convite acima já ocupa o espaço.
+            if (state.selectedExerciseId != null) {
+                item(key = "empty") {
+                    Text(
+                        text = stringResource(R.string.history_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
             }
         } else {
             val groups = rows.groupBy { dayKey(it.performedAt) }
