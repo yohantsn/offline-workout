@@ -117,6 +117,9 @@ class HistoryNavigationTest {
         override suspend fun createWorkoutWithExercises(input: WorkoutAggregateDraft): Result<Long> =
             Result.failure(UnsupportedOperationException("must not be called"))
 
+        override suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
+            throw UnsupportedOperationException("not used")
+
         override suspend fun updateWorkoutWithExercises(workoutId: Long, input: WorkoutAggregateDraft): Result<Unit> =
             Result.failure(UnsupportedOperationException("must not be called"))
     }

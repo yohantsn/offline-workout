@@ -8,6 +8,9 @@ import com.offlineworkout.data.model.WorkoutSummary
 import com.offlineworkout.data.model.WorkoutUpdate
 import kotlinx.coroutines.flow.Flow
 
+// T2.4: maximum number of workouts accepted in a single batch import. Reject,
+// never truncate silently.
+const val IMPORT_MAX_WORKOUTS = 20
 // T2.1: public contract for workout/exercise configuration. Reads are Flow
 // (failures surface as RepositoryException); writes are suspend Result with
 // RepositoryFailure. No Room/DAO/SQLite/data.local imports.
@@ -27,5 +30,6 @@ interface WorkoutRepository {
     suspend fun reorderExercises(workoutId: Long, orderedExerciseIds: List<Long>): Result<Unit>
 
     suspend fun createWorkoutWithExercises(input: WorkoutAggregateDraft): Result<Long>
+    suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>>
     suspend fun updateWorkoutWithExercises(workoutId: Long, input: WorkoutAggregateDraft): Result<Unit>
 }

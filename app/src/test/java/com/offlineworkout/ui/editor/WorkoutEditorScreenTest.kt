@@ -15,8 +15,8 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.offlineworkout.data.model.ExerciseType
 import com.offlineworkout.data.repository.RepositoryFailure
-import com.offlineworkout.viewmodel.EditorField
-import com.offlineworkout.viewmodel.ExerciseFormState
+import com.offlineworkout.ui.draft.EditorField
+import com.offlineworkout.ui.draft.ExerciseFormState
 import com.offlineworkout.viewmodel.WorkoutEditorFormState
 import com.offlineworkout.viewmodel.WorkoutEditorMode
 import com.offlineworkout.viewmodel.WorkoutEditorUiState
