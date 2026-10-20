@@ -149,6 +149,9 @@ class WorkoutEditorDestinationTest {
         override suspend fun createWorkoutWithExercises(input: WorkoutAggregateDraft): Result<Long> =
             throw UnsupportedOperationException("must not be called")
 
+        override suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
+            throw UnsupportedOperationException("not used")
+
         override suspend fun updateWorkoutWithExercises(workoutId: Long, input: WorkoutAggregateDraft): Result<Unit> =
             throw UnsupportedOperationException("must not be called")
     }

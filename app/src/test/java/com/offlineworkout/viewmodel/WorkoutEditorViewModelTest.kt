@@ -12,6 +12,7 @@ import com.offlineworkout.data.model.WorkoutUpdate
 import com.offlineworkout.data.repository.RepositoryException
 import com.offlineworkout.data.repository.RepositoryFailure
 import com.offlineworkout.data.repository.WorkoutRepository
+import com.offlineworkout.ui.draft.EditorField
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -360,6 +361,9 @@ class WorkoutEditorViewModelTest {
             deferredCreate?.let { return it.await() }
             return createResult ?: Result.success(99L)
         }
+
+        override suspend fun createWorkoutsWithExercises(inputs: List<WorkoutAggregateDraft>): Result<List<Long>> =
+            throw UnsupportedOperationException("not used")
 
         override suspend fun updateWorkoutWithExercises(workoutId: Long, input: WorkoutAggregateDraft): Result<Unit> {
             writes.add(input)

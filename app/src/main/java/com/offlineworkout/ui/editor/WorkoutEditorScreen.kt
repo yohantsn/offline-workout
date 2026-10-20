@@ -46,8 +46,8 @@ import com.offlineworkout.ui.components.AppTopBar
 import com.offlineworkout.ui.components.ErrorCard
 import com.offlineworkout.ui.components.PrimaryButton
 import com.offlineworkout.ui.components.TypeBadgeTone
-import com.offlineworkout.viewmodel.EditorField
-import com.offlineworkout.viewmodel.ExerciseFormState
+import com.offlineworkout.ui.draft.EditorField
+import com.offlineworkout.ui.draft.ExerciseFormState
 import com.offlineworkout.viewmodel.MoveDirection
 import com.offlineworkout.viewmodel.WorkoutEditorMode
 import com.offlineworkout.viewmodel.WorkoutEditorUiState
