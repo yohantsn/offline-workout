@@ -1,0 +1,78 @@
+name: CI
+
+# Runs on every push, on every pull request, and on demand. The same three
+# tasks as the local gate, because a CI that runs a different set of checks
+# than the developer runs is only a second, weaker opinion.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Testes, lint e build de debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Gate
+        run: ./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest
+
+      # Mirrors the count printed locally. A green check with a falling test
+      # count is the kind of silent regression the project already treats as a
+      # defect, so the number is surfaced on every run, not only on failure.
+      - name: Resumo dos testes
+        if: always()
+        run: |
+          python3 - "$GITHUB_STEP_SUMMARY" <<'PY'
+          import glob, re, sys
+
+          total = failures = errors = skipped = classes = 0
+          for path in glob.glob("app/build/test-results/testDebugUnitTest/*.xml"):
+              classes += 1
+              match = re.search(
+                  r'tests="(\d+)" skipped="(\d+)" failures="(\d+)" errors="(\d+)"',
+                  open(path, encoding="utf-8").read(2000),
+              )
+              if match:
+                  total += int(match.group(1))
+                  skipped += int(match.group(2))
+                  failures += int(match.group(3))
+                  errors += int(match.group(4))
+
+          with open(sys.argv[1], "a", encoding="utf-8") as out:
+              out.write("## Testes\n\n")
+              out.write(
+                  f"{classes} classes, **{total} testes**, "
+                  f"{failures} falhas, {errors} erros, {skipped} ignorados\n"
+              )
+          PY
+
+      - name: Relatórios
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios
+          path: |
+            app/build/reports/tests/testDebugUnitTest
+            app/build/test-results/testDebugUnitTest
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
