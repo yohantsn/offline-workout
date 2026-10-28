@@ -299,6 +299,64 @@ usar `Backup` para exportar (escolher destino no SAF), compartilhar o arquivo
 gerado e reimportar pelo SAF confirmando a substituição. Sem segunda tela de
 autenticação, rede ou sincronização.
 
+## Integração contínua e releases
+
+Dois workflows, com papéis separados.
+
+| Workflow | Quando roda | O que faz |
+|---|---|---|
+| `.github/workflows/ci.yml` | todo push, todo PR e sob demanda | `assembleDebug`, `lintDebug`, `testDebugUnitTest` — exatamente o gate local |
+| `.github/workflows/release.yml` | push em `main` e sob demanda | repete o gate, builda o APK de release, cria a tag e publica a release |
+
+O CI roda o **mesmo** conjunto de tasks que o desenvolvedor roda localmente. Um
+CI que valida menos que a máquina local é uma segunda opinião mais fraca, e o
+verde dele não significa o que parece significar. O resumo do run publica a
+contagem de testes, para que um verde com suíte encolhendo apareça na tela em
+vez de passar despercebido.
+
+### Versionamento (MAJOR.MINOR.PATCH)
+
+O arquivo `VERSION` na raiz é a fonte da verdade para builds locais; a tag é a
+fonte da verdade do que já foi publicado. O `versionCode` **não** é escrito à
+mão: é derivado da versão semântica como `MAJOR * 10000 + MINOR * 100 + PATCH`,
+o que o mantém monotônico (o Android recusa um `versionCode` menor) e impossível
+de desalinhar do `versionName`.
+
+- **PATCH** avança sozinho a cada merge em `main`. Não é preciso editar nada.
+- **MAJOR/MINOR** mudam quando alguém edita `VERSION` no PR. A versão maior que
+  a última tag vence, então `0.1.0` → `0.2.0` no `VERSION` produz a tag
+  `v0.2.0` no merge seguinte, sem segundo passo manual.
+- A versão é injetada no build por `-PversionName` / `-PversionCode`. O
+  workflow não reescreve nem commita `VERSION` em `main`, então não há laço de
+  gatilho e o histórico de tags é linear.
+
+O APK é conferido com `aapt2 dump badging` **antes** de ser anexado à release:
+um artefato publicado com `versionName` errado não tem como ser recolhido.
+
+### Segredos de assinatura
+
+O build de release falha de propósito sem keystore (ver *Build de release e
+assinatura*). A release usa quatro segredos do repositório:
+
+| Segredo | Conteúdo |
+|---|---|
+| `OFFLINE_WORKOUT_KEYSTORE_BASE64` | o `.jks` codificado em base64 |
+| `OFFLINE_WORKOUT_KEYSTORE_PASSWORD` | senha do store |
+| `OFFLINE_WORKOUT_KEY_ALIAS` | alias da chave |
+| `OFFLINE_WORKOUT_KEY_PASSWORD` | senha da chave |
+
+```bash
+base64 -i release.jks | gh secret set OFFLINE_WORKOUT_KEYSTORE_BASE64
+gh secret set OFFLINE_WORKOUT_KEYSTORE_PASSWORD
+gh secret set OFFLINE_WORKOUT_KEY_ALIAS
+gh secret set OFFLINE_WORKOUT_KEY_PASSWORD
+```
+
+A keystore é materializada em `$RUNNER_TEMP` e apagada ao fim do job, inclusive
+em falha. Nenhum segredo entra no repositório e nenhum é impresso no log. Se
+algum dos quatro faltar, o job falha com a lista do que falta e o comando de
+correção — **não** publica uma release vazia nem um APK sem assinatura.
+
 ## Decisões de arquitetura (resumo T0.1)
 
 - Módulo único `app`; sem `domain`, sem DI, sem flavors.
