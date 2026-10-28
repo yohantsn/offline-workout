@@ -29,8 +29,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-
+      # No setup-android step on purpose: the ubuntu-latest image already ships
+      # the SDK with ANDROID_HOME and accepted licenses, and
+      # android-actions/setup-android@v3 fails on it ("Failed to find package
+      # 'tools'", a package that no longer exists in the SDK repository).
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Gate
