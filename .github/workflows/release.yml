@@ -1,0 +1,189 @@
+name: Release
+
+# Every merge to main publishes exactly one release: a new tag, the APK built
+# from that commit, and the notes between tags. Nothing is committed back to
+# main — the tag is the record, and `VERSION` is only the base for local builds
+# and for deliberate MAJOR/MINOR bumps.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Tag e APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Tags are the version history, so they must be present locally.
+          fetch-depth: 0
+          fetch-tags: true
+
+      # An APK with no signature at all cannot be installed: the platform
+      # rejects it. So the fallback when the keystore is not configured is the
+      # APK signed with the debug key, which installs normally and is built by
+      # the same code — it is only debuggable and signed by a throwaway key.
+      # The build script refuses to emit an UNSIGNED release artifact (T9.2
+      # D-3), and that guard is not weakened here: without secrets we simply
+      # build the debug variant instead of the release one.
+      - name: Escolher assinatura
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.OFFLINE_WORKOUT_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.OFFLINE_WORKOUT_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.OFFLINE_WORKOUT_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.OFFLINE_WORKOUT_KEY_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$KEYSTORE_B64" ] && missing="$missing OFFLINE_WORKOUT_KEYSTORE_BASE64"
+          [ -z "$STORE_PASSWORD" ] && missing="$missing OFFLINE_WORKOUT_KEYSTORE_PASSWORD"
+          [ -z "$KEY_ALIAS" ] && missing="$missing OFFLINE_WORKOUT_KEY_ALIAS"
+          [ -z "$KEY_PASSWORD" ] && missing="$missing OFFLINE_WORKOUT_KEY_PASSWORD"
+
+          if [ -n "$missing" ]; then
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+            echo "::warning::Keystore de release não configurada (faltam:$missing). Publicando APK de depuração assinado com a chave de debug."
+            echo "### Assinatura: **debug** (chave de depuração)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Segredos ausentes:$missing" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+            echo "### Assinatura: **release**" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # MAJOR/MINOR change only when someone edits VERSION on purpose. PATCH
+      # moves on its own so that every merge produces a tag. A VERSION higher
+      # than the latest tag wins, which is how a deliberate 0.1.0 -> 0.2.0 bump
+      # lands without a second manual step.
+      - name: Calcular versão
+        id: version
+        run: |
+          set -euo pipefail
+          BASE=$(tr -d '[:space:]' < VERSION)
+          LATEST=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+
+          if [ -z "$LATEST" ]; then
+            NEXT="$BASE"
+          else
+            LATEST_V="${LATEST#v}"
+            HIGHEST=$(printf '%s\n%s\n' "$LATEST_V" "$BASE" | sort -V | tail -n1)
+            if [ "$HIGHEST" != "$LATEST_V" ]; then
+              NEXT="$BASE"
+            else
+              IFS=. read -r MAJOR MINOR PATCH <<< "$LATEST_V"
+              NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+            fi
+          fi
+
+          if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
+            echo "::error::A tag v$NEXT já existe; nada a publicar."
+            exit 1
+          fi
+
+          IFS=. read -r MAJOR MINOR PATCH <<< "$NEXT"
+          CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+
+          echo "name=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "### Versão $NEXT (versionCode $CODE)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # No setup-android step on purpose (see ci.yml): the runner image already
+      # provides the SDK, and setup-android@v3 fails on it.
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Materializar keystore
+        if: steps.signing.outputs.mode == 'release'
+        env:
+          KEYSTORE_B64: ${{ secrets.OFFLINE_WORKOUT_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          chmod 600 "$RUNNER_TEMP/release.jks"
+
+      # The same gate as CI. A tag that points at a commit whose tests were
+      # never green is not a release, it is a guess.
+      - name: Gate
+        run: ./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest
+
+      # Both branches carry the tag's version, so moving from debug to release
+      # signing does not change what the APK reports.
+      - name: Build do APK
+        id: build
+        env:
+          MODE: ${{ steps.signing.outputs.mode }}
+          OFFLINE_WORKOUT_KEYSTORE: ${{ runner.temp }}/release.jks
+          OFFLINE_WORKOUT_KEYSTORE_PASSWORD: ${{ secrets.OFFLINE_WORKOUT_KEYSTORE_PASSWORD }}
+          OFFLINE_WORKOUT_KEY_ALIAS: ${{ secrets.OFFLINE_WORKOUT_KEY_ALIAS }}
+          OFFLINE_WORKOUT_KEY_PASSWORD: ${{ secrets.OFFLINE_WORKOUT_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          VERSION_NAME="${{ steps.version.outputs.name }}"
+          VERSION_CODE="${{ steps.version.outputs.code }}"
+
+          if [ "$MODE" = "release" ]; then
+            ./gradlew :app:assembleRelease -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+            SOURCE="app/build/outputs/apk/release/app-release.apk"
+            ASSET="offline-workout-$VERSION_NAME.apk"
+          else
+            ./gradlew :app:assembleDebug -PversionName="$VERSION_NAME" -PversionCode="$VERSION_CODE"
+            SOURCE="app/build/outputs/apk/debug/app-debug.apk"
+            ASSET="offline-workout-$VERSION_NAME-debug.apk"
+          fi
+
+          mkdir -p dist
+          cp "$SOURCE" "dist/$ASSET"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+
+      # Proves the artifact is signed and carries the tag's version before it
+      # is attached. A published APK with the wrong versionName cannot be
+      # walked back.
+      - name: Conferir o APK
+        run: |
+          set -euo pipefail
+          APK="dist/${{ steps.build.outputs.asset }}"
+          BADGING=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n1)
+          "$BADGING" dump badging "$APK" | head -n3 | tee apk-badging.txt
+          grep -q "versionName='${{ steps.version.outputs.name }}'" apk-badging.txt \
+            || { echo "::error::APK não carrega versionName esperado"; exit 1; }
+          SIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n1)
+          "$SIGNER" verify --print-certs "$APK" | head -n1 | tee apk-signer.txt
+
+      # The release body says which key signed the artifact, so a debug APK can
+      # never be mistaken for a release build later.
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODE: ${{ steps.signing.outputs.mode }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.version.outputs.name }}"
+
+          gh release create "$TAG" "dist/${{ steps.build.outputs.asset }}" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --generate-notes
+
+          if [ "$MODE" != "release" ]; then
+            BODY=$(gh release view "$TAG" --json body -q .body)
+            gh release edit "$TAG" --notes "$BODY
+
+---
+
+**APK de depuração.** Assinado com a chave de depuração do Android: instala normalmente, mas é *debuggable* e não serve para publicação em loja. Configure a keystore de release para publicar um build de release."
+          fi
+
+      - name: Apagar keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
