@@ -353,9 +353,16 @@ gh secret set OFFLINE_WORKOUT_KEY_PASSWORD
 ```
 
 A keystore é materializada em `$RUNNER_TEMP` e apagada ao fim do job, inclusive
-em falha. Nenhum segredo entra no repositório e nenhum é impresso no log. Se
-algum dos quatro faltar, o job falha com a lista do que falta e o comando de
-correção — **não** publica uma release vazia nem um APK sem assinatura.
+em falha. Nenhum segredo entra no repositório e nenhum é impresso no log.
+
+**Sem os quatro segredos**, a release publica `offline-workout-<versão>-debug.apk`:
+o APK da variante debug, assinado com a chave de depuração do Android. Ele
+instala normalmente e roda o mesmo código — apenas é *debuggable* e assinado por
+uma chave descartável. Isso existe porque um APK **sem assinatura alguma não
+instala**: o Android recusa com `has no signatures`. O guarda de D-3 não é
+afrouxado por isso: o build continua incapaz de emitir um artefato de release
+não assinado; o que muda é qual variante é construída. O corpo da release diz
+explicitamente qual chave assinou o artefato.
 
 ## Decisões de arquitetura (resumo T0.1)
 
