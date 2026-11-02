@@ -179,11 +179,6 @@ jobs:
             BODY=$(gh release view "$TAG" --json body -q .body)
             gh release edit "$TAG" --notes "$BODY
 
----
-
-**APK de depuração.** Assinado com a chave de depuração do Android: instala normalmente, mas é *debuggable* e não serve para publicação em loja. Configure a keystore de release para publicar um build de release."
-          fi
-
       - name: Apagar keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
