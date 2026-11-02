@@ -5,6 +5,36 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Version: the VERSION file at the repository root is the single source of
+// truth for local builds. The release workflow passes -PversionName and
+// -PversionCode so the published APK always matches its git tag, without the
+// workflow having to rewrite this file or commit back to main.
+//
+// versionCode is derived from the semantic version instead of being maintained
+// by hand: MAJOR * 10_000 + MINOR * 100 + PATCH. That keeps it monotonic for
+// Android (which refuses a lower code) and impossible to desynchronise from
+// versionName.
+val versionFile = rootProject.file("VERSION")
+val baseVersionName = versionFile
+    .takeIf { it.isFile }
+    ?.readText()
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
+    ?: "0.1.0"
+
+fun versionCodeOf(semver: String): Int {
+    val parts = semver.substringBefore('-').split('.')
+    fun part(index: Int): Int = parts.getOrNull(index)?.toIntOrNull() ?: 0
+    return part(0) * 10_000 + part(1) * 100 + part(2)
+}
+
+val resolvedVersionName = providers.gradleProperty("versionName").orNull
+    ?.takeIf { it.isNotBlank() }
+    ?: baseVersionName
+val resolvedVersionCode = providers.gradleProperty("versionCode").orNull
+    ?.toIntOrNull()
+    ?: versionCodeOf(resolvedVersionName)
+
 // T9.2 (D-3): release signing reads a keystore that lives OUTSIDE the
 // repository. No secret is in the build script and none is committed. Provide
 // all four values as Gradle properties (~/.gradle/gradle.properties, never in
@@ -69,8 +99,8 @@ android {
         applicationId = "com.offlineworkout"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = resolvedVersionCode
+        versionName = resolvedVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
