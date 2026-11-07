@@ -38,6 +38,7 @@ class WorkoutListScreenTest {
         executed: MutableList<Long> = mutableListOf(),
         edited: MutableList<Long> = mutableListOf(),
         historied: MutableList<Long> = mutableListOf(),
+        imported: IntArray = IntArray(1),
         backed: IntArray = IntArray(1)
     ) {
         composeTestRule.setContent {
@@ -45,6 +46,7 @@ class WorkoutListScreenTest {
                 state = state,
                 onRetry = { retried[0] += 1 },
                 onCreateSelected = { created[0] += 1 },
+                onImportSelected = { imported[0] += 1 },
                 onExecutionSelected = { executed.add(it) },
                 onEditSelected = { edited.add(it) },
                 onHistorySelected = { historied.add(it) },

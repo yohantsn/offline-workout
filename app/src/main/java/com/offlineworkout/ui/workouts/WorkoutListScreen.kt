@@ -33,14 +33,14 @@ import com.offlineworkout.ui.components.LoadingSkeleton
 import com.offlineworkout.ui.components.PrimaryButton
 import com.offlineworkout.viewmodel.WorkoutListUiState
 
-// Redesign lote 3: TopAppBar com Criar/Backup, card inteiro executa,
+// Redesign lote 3: TopAppBar com Criar/Importar/Backup, card inteiro executa,
 // skeleton no loading, ErrorCard no erro, empty state com CTA.
-// Assinatura inalterada (8 params do plano §4).
 @Composable
 fun WorkoutListScreen(
     state: WorkoutListUiState,
     onRetry: () -> Unit,
     onCreateSelected: () -> Unit,
+    onImportSelected: () -> Unit,
     onBackupSelected: () -> Unit,
     onExecutionSelected: (Long) -> Unit,
     onEditSelected: (Long) -> Unit,
@@ -58,6 +58,12 @@ fun WorkoutListScreen(
                         modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                     ) {
                         Text(text = stringResource(R.string.list_create_short))
+                    }
+                    TextButton(
+                        onClick = onImportSelected,
+                        modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                    ) {
+                        Text(text = stringResource(R.string.list_import))
                     }
                     TextButton(
                         onClick = onBackupSelected,

@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.offlineworkout.data.backup.BackupFileGateway
 import com.offlineworkout.data.config.WorkoutEditorConfig
+import com.offlineworkout.data.importer.ImportFileReader
 import com.offlineworkout.data.repository.BackupRepository
 import com.offlineworkout.data.repository.ExerciseHistoryRepository
 import com.offlineworkout.data.repository.WorkoutRepository
@@ -39,6 +40,9 @@ class MainActivity : ComponentActivity() {
     private val backupFileGateway: BackupFileGateway
         get() = (application as OfflineWorkoutApplication).container.backupFileGateway
 
+    private val importFileReader: ImportFileReader
+        get() = (application as OfflineWorkoutApplication).container.importFileReader
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val repository = workoutRepository
@@ -48,6 +52,7 @@ class MainActivity : ComponentActivity() {
         val session = sessionController
         val backup = backupRepository
         val gateway = backupFileGateway
+        val importReader = importFileReader
         setContent {
             OfflineWorkoutTheme {
                 AppNavHost(
@@ -57,7 +62,8 @@ class MainActivity : ComponentActivity() {
                     timerController = timer,
                     sessionController = session,
                     backupRepository = backup,
-                    backupFileGateway = gateway
+                    backupFileGateway = gateway,
+                    importFileReader = importReader
                 )
             }
         }

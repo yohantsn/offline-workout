@@ -5,6 +5,8 @@ import androidx.room.Room
 import com.offlineworkout.data.backup.AndroidBackupFileGateway
 import com.offlineworkout.data.backup.BackupFileGateway
 import com.offlineworkout.data.config.WorkoutEditorConfig
+import com.offlineworkout.data.importer.BackupGatewayImportFileReader
+import com.offlineworkout.data.importer.ImportFileReader
 import com.offlineworkout.data.local.AppDatabase
 import com.offlineworkout.data.repository.BackupRepository
 import com.offlineworkout.data.repository.ExerciseHistoryRepository
@@ -64,6 +66,11 @@ class AppContainer(context: Context) : Closeable {
     private val backupGatewayImpl = AndroidBackupFileGateway(context.applicationContext)
     val backupRepository: BackupRepository = RoomBackupRepository(database)
     val backupFileGateway: BackupFileGateway = backupGatewayImpl
+
+    // Importação de planilha: lê o documento escolhido pelo mesmo gateway SAF
+    // do backup (mesmo limite de 4 MB e mesmos tipos de erro), sem abrir um
+    // segundo caminho de ContentResolver.
+    val importFileReader: ImportFileReader = BackupGatewayImportFileReader(backupGatewayImpl)
 
     // T6.1: total session stopwatch (no foreground service). Same ownership
     // pattern: interfaces out, concretes inside.
