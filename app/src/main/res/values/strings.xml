@@ -214,4 +214,33 @@
     <string name="execution_session_restored">Sessão anterior retomada</string>
     <string name="execution_err_latest">Não foi possível ler o histórico anterior.</string>
     <string name="execution_err_timer">Descanso indisponível.</string>
+    <!-- Importação de planilha (CSV) -->
+    <string name="list_import">Importar</string>
+    <string name="import_title">Importar treino</string>
+    <string name="import_idle_title">Importar de planilha</string>
+    <string name="import_idle_text">Escolha um arquivo CSV exportado da sua planilha. Nada é salvo antes de você revisar.</string>
+    <string name="import_pick_file">Escolher arquivo</string>
+    <string name="import_reading">Lendo e analisando o arquivo…</string>
+    <string name="import_saving">Salvando…</string>
+    <string name="import_review_title">Revisar importação</string>
+    <string name="import_warnings_title">Avisos</string>
+    <string name="import_code_label">Código</string>
+    <string name="import_name_label">Nome do treino</string>
+    <string name="import_close">Concluir</string>
+    <string name="import_choose_another">Escolher outro arquivo</string>
+    <string name="import_done_title">Importação concluída</string>
+    <string name="import_targets_series">%1$d × %2$d</string>
+    <string name="import_targets_minutes">%1$d min</string>
+    <string name="import_targets_seconds">%1$d s</string>
+    <string name="import_targets_distance_time">%1$s s · %2$s m</string>
+    <string name="import_rest_seconds">descanso %1$d s</string>
+    <string name="import_exercise_meta">%1$s · %2$s</string>
+    <plurals name="import_confirm_count">
+        <item quantity="one">Importar %d treino</item>
+        <item quantity="other">Importar %d treinos</item>
+    </plurals>
+    <plurals name="import_done_count">
+        <item quantity="one">%d treino foi salvo.</item>
+        <item quantity="other">%d treinos foram salvos.</item>
+    </plurals>
 </resources>

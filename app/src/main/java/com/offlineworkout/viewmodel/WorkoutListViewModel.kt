@@ -36,6 +36,7 @@ sealed interface WorkoutListEffect {
     data class OpenEdit(val workoutId: Long) : WorkoutListEffect
     data class OpenHistory(val workoutId: Long) : WorkoutListEffect
     data object OpenBackup : WorkoutListEffect
+    data object OpenImport : WorkoutListEffect
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -79,6 +80,10 @@ class WorkoutListViewModel(
 
     fun onBackupSelected() {
         effectsChannel.trySend(WorkoutListEffect.OpenBackup)
+    }
+
+    fun onImportSelected() {
+        effectsChannel.trySend(WorkoutListEffect.OpenImport)
     }
 
     fun onExecutionSelected(workoutId: Long) {

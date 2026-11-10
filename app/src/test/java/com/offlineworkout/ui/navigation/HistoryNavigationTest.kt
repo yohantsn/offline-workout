@@ -23,6 +23,7 @@ import com.offlineworkout.data.model.WorkoutSummary
 import com.offlineworkout.data.model.WorkoutUpdate
 import com.offlineworkout.data.repository.BackupDocument
 import com.offlineworkout.data.repository.BackupImportResult
+import com.offlineworkout.data.importer.ImportFileReader
 import com.offlineworkout.data.repository.BackupPreview
 import com.offlineworkout.data.repository.BackupRepository
 import com.offlineworkout.data.repository.ExerciseHistoryRepository
@@ -70,7 +71,8 @@ class HistoryNavigationTest {
                 timerController = IdleTimer(),
                 sessionController = IdleSession(),
                 backupRepository = NoBackup(),
-                backupFileGateway = NoGateway()
+                backupFileGateway = NoGateway(),
+                importFileReader = NoImportReader()
             )
         }
         // Lista → "Histórico" do card (rota SEM query — o caminho do crash).
@@ -78,6 +80,11 @@ class HistoryNavigationTest {
         // Seleção de exercício: nem crash, nem "inválido".
         composeTestRule.onNodeWithText("Todos").assertExists()
         composeTestRule.onNodeWithContentDescription("Ver histórico de Squat").assertExists()
+    }
+
+    private class NoImportReader : ImportFileReader {
+        override suspend fun readBytes(uriString: String): Result<ByteArray> =
+            Result.failure(IllegalStateException("not used"))
     }
 
     private class FakeWorkouts(

@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.offlineworkout.data.backup.BackupFileGateway
 import com.offlineworkout.data.config.WorkoutEditorConfig
+import com.offlineworkout.data.importer.ImportFileReader
 import com.offlineworkout.data.repository.BackupRepository
 import com.offlineworkout.data.repository.ExerciseHistoryRepository
 import com.offlineworkout.data.repository.WorkoutRepository
@@ -24,6 +25,7 @@ import com.offlineworkout.ui.editor.WorkoutEditDestination
 import com.offlineworkout.ui.editor.WorkoutEditorRoute
 import com.offlineworkout.ui.execution.WorkoutExecutionRoute
 import com.offlineworkout.ui.history.WorkoutHistoryDestination
+import com.offlineworkout.ui.imports.ImportRoute
 import com.offlineworkout.ui.workouts.WorkoutListRoute
 import com.offlineworkout.viewmodel.WorkoutEditorMode
 import com.offlineworkout.viewmodel.WorkoutListEffect
@@ -44,6 +46,9 @@ object Routes {
 
     // T8.1: technical route, no arguments.
     const val BACKUP = "backup"
+
+    // Importação de planilha (CSV). Technical route, no arguments.
+    const val IMPORT = "import"
 }
 
 object HistoryRoutes {
@@ -62,7 +67,8 @@ fun AppNavHost(
     timerController: RestTimerController,
     sessionController: WorkoutSessionController,
     backupRepository: BackupRepository,
-    backupFileGateway: BackupFileGateway
+    backupFileGateway: BackupFileGateway,
+    importFileReader: ImportFileReader
 ) {
     val navController = rememberNavController()
     NavHost(
@@ -107,6 +113,9 @@ fun AppNavHost(
 
                         is WorkoutListEffect.OpenBackup ->
                             navController.navigate(Routes.BACKUP) { listDestination() }
+
+                        is WorkoutListEffect.OpenImport ->
+                            navController.navigate(Routes.IMPORT) { listDestination() }
                     }
                 }
             }
@@ -174,6 +183,13 @@ fun AppNavHost(
                         launchSingleTop = true
                     }
                 }
+            )
+        }
+        composable(Routes.IMPORT) {
+            ImportRoute(
+                repository = workoutRepository,
+                fileReader = importFileReader,
+                onBack = { navController.popBackStack() }
             )
         }
         composable(Routes.BACKUP) {

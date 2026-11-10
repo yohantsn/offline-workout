@@ -16,6 +16,7 @@ fun WorkoutListRoute(
         state = viewModel.state.collectAsStateWithLifecycle().value,
         onRetry = viewModel::onRetry,
         onCreateSelected = viewModel::onCreateSelected,
+        onImportSelected = viewModel::onImportSelected,
         onBackupSelected = viewModel::onBackupSelected,
         onExecutionSelected = viewModel::onExecutionSelected,
         onEditSelected = viewModel::onEditSelected,
